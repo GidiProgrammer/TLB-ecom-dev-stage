@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useStore } from "@/lib/store";
-import { formatGHS, productById, products } from "@/lib/catalog";
+import { formatGHS } from "@/lib/catalog-utils";
+import { useProduct, useProducts } from "@/lib/queries/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +37,53 @@ export const Route = createFileRoute("/_authenticated/experiments")({
 
 type ExpItem = { id: string; qty: number };
 
+function ExperimentLine({
+  item,
+  items,
+  onSave,
+}: {
+  item: ExpItem;
+  items: ExpItem[];
+  onSave: (items: ExpItem[]) => void;
+}) {
+  const { data: p } = useProduct(item.id);
+  return (
+    <li className="flex items-center gap-3 py-2.5 text-sm">
+      <span className="flex-1">{p?.name ?? item.id}</span>
+      <Input
+        type="number"
+        min={1}
+        aria-label={`Quantity for ${p?.name ?? item.id}`}
+        value={item.qty}
+        onChange={(e) =>
+          onSave(
+            items.map((it) =>
+              it.id === item.id ? { ...it, qty: Math.max(1, Number(e.target.value) || 1) } : it,
+            ),
+          )
+        }
+        className="w-20"
+      />
+      <span className="w-28 text-right text-xs text-muted-foreground">
+        {p ? formatGHS(p.price * item.qty) : "—"}
+      </span>
+      <Button
+        size="icon"
+        variant="ghost"
+        aria-label="Remove item"
+        onClick={() => onSave(items.filter((it) => it.id !== item.id))}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </li>
+  );
+}
+
 function Experiments() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { addToCart, addToQuote } = useStore();
+  const { data: products } = useProducts();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [pick, setPick] = useState<Record<string, string>>({});
@@ -127,7 +171,10 @@ function Experiments() {
 
           {list.data?.map((exp) => {
             const items = (exp.items as unknown as ExpItem[]) ?? [];
-            const total = items.reduce((sum, i) => sum + (productById(i.id)?.price ?? 0) * i.qty, 0);
+            const total = items.reduce((sum, i) => {
+              const p = products?.find((prod) => prod.id === i.id);
+              return sum + (p ? p.price * i.qty : 0);
+            }, 0);
             return (
               <section key={exp.id} className="rounded-md border border-border bg-card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -166,42 +213,14 @@ function Experiments() {
 
                 {items.length > 0 && (
                   <ul className="mt-4 divide-y divide-border border-y border-border">
-                    {items.map((i) => {
-                      const p = productById(i.id);
-                      return (
-                        <li key={i.id} className="flex items-center gap-3 py-2.5 text-sm">
-                          <span className="flex-1">{p?.name ?? i.id}</span>
-                          <Input
-                            type="number"
-                            min={1}
-                            aria-label={`Quantity for ${p?.name ?? i.id}`}
-                            value={i.qty}
-                            onChange={(e) =>
-                              saveItems.mutate({
-                                id: exp.id,
-                                items: items.map((it) =>
-                                  it.id === i.id ? { ...it, qty: Math.max(1, Number(e.target.value) || 1) } : it,
-                                ),
-                              })
-                            }
-                            className="w-20"
-                          />
-                          <span className="w-28 text-right text-xs text-muted-foreground">
-                            {p ? formatGHS(p.price * i.qty) : "—"}
-                          </span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            aria-label="Remove item"
-                            onClick={() =>
-                              saveItems.mutate({ id: exp.id, items: items.filter((it) => it.id !== i.id) })
-                            }
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </li>
-                      );
-                    })}
+                    {items.map((i) => (
+                      <ExperimentLine
+                        key={i.id}
+                        item={i}
+                        items={items}
+                        onSave={(next) => saveItems.mutate({ id: exp.id, items: next })}
+                      />
+                    ))}
                   </ul>
                 )}
 
@@ -214,7 +233,7 @@ function Experiments() {
                       <SelectValue placeholder="Add a product…" />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
-                      {products.map((p) => (
+                      {(products ?? []).map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name}
                         </SelectItem>

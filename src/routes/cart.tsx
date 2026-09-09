@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQueries } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
-import { formatGHS, productById, productImage } from "@/lib/catalog";
-import { useStore } from "@/lib/store";
+import { formatGHS, productImage } from "@/lib/catalog-utils";
+import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
+import { useStore, type LineItem } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -17,8 +20,81 @@ export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
+function CartLine({
+  line,
+  setCartQty,
+  removeFromCart,
+}: {
+  line: LineItem;
+  setCartQty: (id: string, qty: number) => void;
+  removeFromCart: (id: string) => void;
+}) {
+  const { data: product, isLoading, error } = useProduct(line.id);
+
+  if (isLoading) {
+    return (
+      <div className="flex gap-4 p-4">
+        <Skeleton className="h-20 w-20 shrink-0 rounded" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-1/3" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) return null;
+
+  return (
+    <div className="flex gap-4 p-4">
+      <img
+        src={productImage(product.category)}
+        alt={product.name}
+        className="h-20 w-20 shrink-0 rounded object-cover"
+      />
+      <div className="min-w-0 flex-1">
+        <Link
+          to="/product/$id"
+          params={{ id: product.id }}
+          className="font-display text-sm font-bold hover:text-primary"
+        >
+          {product.name}
+        </Link>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {product.brand} · {formatGHS(product.price)} / {product.unit}
+        </p>
+        <div className="mt-3 flex items-center gap-3">
+          <Input
+            type="number"
+            min={1}
+            aria-label={`Quantity for ${product.name}`}
+            value={line.qty}
+            onChange={(e) => setCartQty(line.id, Number(e.target.value) || 0)}
+            className="w-20"
+          />
+          <Button variant="ghost" size="sm" onClick={() => removeFromCart(line.id)}>
+            <Trash2 className="h-4 w-4" /> Remove
+          </Button>
+        </div>
+      </div>
+      <p className="font-display text-sm font-bold">{formatGHS(product.price * line.qty)}</p>
+    </div>
+  );
+}
+
 function CartPage() {
-  const { cart, setCartQty, removeFromCart, cartSubtotal, clearCart } = useStore();
+  const { cart, setCartQty, removeFromCart, clearCart } = useStore();
+  const lineQueries = useQueries({
+    queries: cart.map((line) => ({
+      queryKey: ["product", line.id],
+      queryFn: () => fetchProductBySlug(line.id),
+      enabled: Boolean(line.id),
+    })),
+  });
+  const cartSubtotal = cart.reduce((sum, line, i) => {
+    const product = lineQueries[i]?.data;
+    return sum + (product ? product.price * line.qty : 0);
+  }, 0);
 
   return (
     <div className="container-page py-10">
@@ -35,45 +111,14 @@ function CartPage() {
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_20rem]">
           <div className="divide-y divide-border rounded-md border border-border">
-            {cart.map((line) => {
-              const product = productById(line.id);
-              if (!product) return null;
-              return (
-                <div key={line.id} className="flex gap-4 p-4">
-                  <img
-                    src={productImage(product.category)}
-                    alt={product.name}
-                    className="h-20 w-20 shrink-0 rounded object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      to="/product/$id"
-                      params={{ id: product.id }}
-                      className="font-display text-sm font-bold hover:text-primary"
-                    >
-                      {product.name}
-                    </Link>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {product.brand} · {formatGHS(product.price)} / {product.unit}
-                    </p>
-                    <div className="mt-3 flex items-center gap-3">
-                      <Input
-                        type="number"
-                        min={1}
-                        aria-label={`Quantity for ${product.name}`}
-                        value={line.qty}
-                        onChange={(e) => setCartQty(line.id, Number(e.target.value) || 0)}
-                        className="w-20"
-                      />
-                      <Button variant="ghost" size="sm" onClick={() => removeFromCart(line.id)}>
-                        <Trash2 className="h-4 w-4" /> Remove
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="font-display text-sm font-bold">{formatGHS(product.price * line.qty)}</p>
-                </div>
-              );
-            })}
+            {cart.map((line) => (
+              <CartLine
+                key={line.id}
+                line={line}
+                setCartQty={setCartQty}
+                removeFromCart={removeFromCart}
+              />
+            ))}
           </div>
 
           <aside className="h-fit rounded-md border border-border bg-card p-5">

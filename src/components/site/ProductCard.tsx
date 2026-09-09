@@ -1,12 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { FileText, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-import { formatGHS, productImage, stockLabel, type Product } from "@/lib/catalog";
+import { formatGHS, productImage, stockLabel } from "@/lib/catalog-utils";
+import type { CatalogProduct } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product: CatalogProduct }) {
   const { addToCart, addToQuote } = useStore();
 
   return (
@@ -36,7 +37,9 @@ export function ProductCard({ product }: { product: Product }) {
             {product.name}
           </Link>
         </h3>
-        <p className="mt-2 text-xs text-muted-foreground">{stockLabel[product.stock]}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {stockLabel(product.stock_quantity, product.low_stock_threshold)}
+        </p>
 
         <div className="mt-3 flex items-baseline gap-1">
           <span className="font-display text-lg font-extrabold text-primary">{formatGHS(product.price)}</span>

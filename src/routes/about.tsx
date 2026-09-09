@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BadgeCheck, Building2, Target, Users } from "lucide-react";
 import heroLab from "@/assets/hero-lab.jpg";
-import { COMPANY } from "@/lib/catalog";
+import { COMPANY } from "@/lib/catalog-utils";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/about")({

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, MapPin, Phone, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { COMPANY } from "@/lib/catalog";
+import { COMPANY } from "@/lib/catalog-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

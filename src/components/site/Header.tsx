@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Menu, Search, ShoppingCart, FileText, FlaskConical, User, Phone } from "lucide-react";
-import { categories, COMPANY } from "@/lib/catalog";
+import { COMPANY } from "@/lib/catalog-utils";
+import { useCategories } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export function Header() {
   const [megaOpen, setMegaOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { cartCount, quoteCount } = useStore();
+  const { data: categories } = useCategories();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -68,7 +70,7 @@ export function Header() {
               Categories
             </p>
             <nav className="mt-3 flex flex-col">
-              {categories.map((c) => (
+              {(categories ?? []).map((c) => (
                 <Link
                   key={c.slug}
                   to="/shop"
@@ -110,7 +112,7 @@ export function Header() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
-              {categories.map((c) => (
+              {(categories ?? []).map((c) => (
                 <SelectItem key={c.slug} value={c.slug}>
                   {c.name}
                 </SelectItem>
@@ -171,7 +173,7 @@ export function Header() {
               )}
             >
               <div className="grid gap-6 md:grid-cols-4">
-                {categories.map((c) => (
+                {(categories ?? []).map((c) => (
                   <div key={c.slug}>
                     <Link
                       to="/shop"

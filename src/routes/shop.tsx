@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { categories, categoryBySlug, searchProducts, formatGHS } from "@/lib/catalog";
+import { formatGHS } from "@/lib/catalog-utils";
+import { useCategories, useProducts } from "@/lib/queries/products";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -49,16 +50,15 @@ function Shop() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/shop" });
   const activeCategory = search.category ?? "all";
-  const category = activeCategory === "all" ? undefined : categoryBySlug(activeCategory);
+  const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCategories();
+  const category = activeCategory === "all" ? undefined : categories?.find((c) => c.slug === activeCategory);
 
-  const results = useMemo(() => {
-    let list = searchProducts(search.q ?? "", activeCategory);
-    if (search.sub) list = list.filter((p) => p.subcategory === search.sub);
-    if (search.sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
-    if (search.sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
-    if (search.sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-    return list;
-  }, [search.q, activeCategory, search.sub, search.sort]);
+  const { data: products, isLoading: productsLoading, error: productsError } = useProducts({
+    search: search.q,
+    categorySlug: activeCategory === "all" ? undefined : activeCategory,
+    sort: search.sort,
+  });
+  const results = (products ?? []).filter((p) => (search.sub ? p.subcategory === search.sub : true));
 
   const setSearch = (next: Partial<ShopSearch>) =>
     navigate({ search: (prev) => ({ ...prev, ...next }) });
@@ -92,7 +92,11 @@ function Shop() {
                   All categories
                 </button>
               </li>
-              {categories.map((c) => (
+              {categoriesLoading ? (
+                <li className="text-sm text-muted-foreground">Loading…</li>
+              ) : categoriesError ? (
+                <li className="text-sm text-muted-foreground">Could not load categories.</li>
+              ) : (categories ?? []).map((c) => (
                 <li key={c.slug}>
                   <button
                     onClick={() => setSearch({ category: c.slug, sub: undefined })}
@@ -163,7 +167,18 @@ function Shop() {
             </Select>
           </div>
 
-          {results.length === 0 ? (
+          {productsLoading ? (
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-4/3 w-full rounded-md" />
+              ))}
+            </div>
+          ) : productsError ? (
+            <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
+              <p className="font-display text-lg font-bold">Could not load products</p>
+              <p className="mt-2 text-sm text-muted-foreground">Please try again shortly.</p>
+            </div>
+          ) : results.length === 0 ? (
             <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
               <p className="font-display text-lg font-bold">No products matched</p>
               <p className="mt-2 text-sm text-muted-foreground">

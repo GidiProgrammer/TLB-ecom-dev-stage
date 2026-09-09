@@ -1,15 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQueries } from "@tanstack/react-query";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { formatGHS, productById } from "@/lib/catalog";
-import { useStore } from "@/lib/store";
+import { formatGHS } from "@/lib/catalog-utils";
+import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
+import { useStore, type LineItem } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/quote")({
   head: () => ({
@@ -27,11 +30,67 @@ export const Route = createFileRoute("/quote")({
   component: QuotePage,
 });
 
+function QuoteLine({
+  line,
+  setQuoteQty,
+  removeFromQuote,
+}: {
+  line: LineItem;
+  setQuoteQty: (id: string, qty: number) => void;
+  removeFromQuote: (id: string) => void;
+}) {
+  const { data: p, isLoading, error } = useProduct(line.id);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-4 p-4">
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-1/3" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !p) return null;
+
+  return (
+    <div className="flex items-center gap-4 p-4">
+      <div className="min-w-0 flex-1">
+        <Link to="/product/$id" params={{ id: p.id }} className="font-display text-sm font-bold hover:text-primary">
+          {p.name}
+        </Link>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {p.brand} · list {formatGHS(p.price)} / {p.unit}
+        </p>
+      </div>
+      <Input
+        type="number"
+        min={1}
+        aria-label={`Quantity for ${p.name}`}
+        value={line.qty}
+        onChange={(e) => setQuoteQty(line.id, Number(e.target.value) || 0)}
+        className="w-20"
+      />
+      <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => removeFromQuote(line.id)}>
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 function QuotePage() {
   const { quote, setQuoteQty, removeFromQuote, clearQuote } = useStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const lineQueries = useQueries({
+    queries: quote.map((line) => ({
+      queryKey: ["product", line.id],
+      queryFn: () => fetchProductBySlug(line.id),
+      enabled: Boolean(line.id),
+    })),
+  });
   const [form, setForm] = useState({
     name: "",
     email: user?.email ?? "",
@@ -56,8 +115,8 @@ function QuotePage() {
     }
     setBusy(true);
     const reference = `QT-${Date.now().toString().slice(-8)}`;
-    const items = quote.map((l) => {
-      const p = productById(l.id);
+    const items = quote.map((l, i) => {
+      const p = lineQueries[i]?.data;
       return { id: l.id, name: p?.name ?? l.id, qty: l.qty, price: p?.price ?? 0, unit: p?.unit ?? "" };
     });
     const { error } = await supabase.from("quotes").insert({
@@ -103,33 +162,14 @@ function QuotePage() {
             </div>
           ) : (
             <div className="mt-3 divide-y divide-border rounded-md border border-border">
-              {quote.map((line) => {
-                const p = productById(line.id);
-                if (!p) return null;
-                return (
-                  <div key={line.id} className="flex items-center gap-4 p-4">
-                    <div className="min-w-0 flex-1">
-                      <Link to="/product/$id" params={{ id: p.id }} className="font-display text-sm font-bold hover:text-primary">
-                        {p.name}
-                      </Link>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {p.brand} · list {formatGHS(p.price)} / {p.unit}
-                      </p>
-                    </div>
-                    <Input
-                      type="number"
-                      min={1}
-                      aria-label={`Quantity for ${p.name}`}
-                      value={line.qty}
-                      onChange={(e) => setQuoteQty(line.id, Number(e.target.value) || 0)}
-                      className="w-20"
-                    />
-                    <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => removeFromQuote(line.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                );
-              })}
+              {quote.map((line) => (
+                <QuoteLine
+                  key={line.id}
+                  line={line}
+                  setQuoteQty={setQuoteQty}
+                  removeFromQuote={removeFromQuote}
+                />
+              ))}
             </div>
           )}
           {quote.length > 0 && (

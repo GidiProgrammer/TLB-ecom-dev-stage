@@ -1,8 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { FlaskConical, Mail, MapPin, Phone } from "lucide-react";
-import { categories, COMPANY } from "@/lib/catalog";
+import { COMPANY } from "@/lib/catalog-utils";
+import { useCategories } from "@/lib/queries/products";
 
 export function Footer() {
+  const { data: categories } = useCategories();
+
   return (
     <footer className="mt-20 border-t border-border bg-primary-dark text-primary-foreground">
       <div className="container-page grid gap-10 py-14 md:grid-cols-4">
@@ -22,7 +25,7 @@ export function Footer() {
         <div>
           <h3 className="font-display text-sm font-bold uppercase tracking-wide">Categories</h3>
           <ul className="mt-4 space-y-2 text-sm text-primary-foreground/75">
-            {categories.slice(0, 6).map((c) => (
+            {(categories ?? []).slice(0, 6).map((c) => (
               <li key={c.slug}>
                 <Link to="/shop" search={{ category: c.slug }} className="hover:text-primary-foreground">
                   {c.name}

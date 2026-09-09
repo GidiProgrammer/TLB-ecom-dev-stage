@@ -1,42 +1,26 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { FileText, ShoppingCart, FlaskConical, Check } from "lucide-react";
 import { toast } from "sonner";
-import {
-  categoryBySlug,
-  formatGHS,
-  productById,
-  productImage,
-  relatedProducts,
-  stockLabel,
-} from "@/lib/catalog";
+import { formatGHS, productImage, stockLabel } from "@/lib/catalog-utils";
+import { useCategories, useProduct, useRelatedProducts } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/product/$id")({
-  loader: ({ params }) => {
-    const product = productById(params.id);
-    if (!product) throw notFound();
-    return { product };
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return { meta: [{ title: "Product unavailable — TLB Enterprise" }, { name: "robots", content: "noindex" }] };
-    }
-    const { product } = loaderData;
-    return {
-      meta: [
-        { title: `${product.name} — TLB Enterprise` },
-        { name: "description", content: product.description.slice(0, 155) },
-        { property: "og:title", content: `${product.name} — TLB Enterprise` },
-        { property: "og:description", content: product.description.slice(0, 155) },
-      ],
-    };
-  },
+  head: ({ params }) => ({
+    meta: [
+      { title: `${params.id} — TLB Enterprise` },
+      { name: "description", content: "Laboratory product details from TLB Enterprise." },
+      { property: "og:title", content: `${params.id} — TLB Enterprise` },
+      { property: "og:description", content: "Laboratory product details from TLB Enterprise." },
+    ],
+  }),
   notFoundComponent: ProductNotFound,
   errorComponent: ProductNotFound,
   component: ProductDetail,
@@ -55,10 +39,33 @@ function ProductNotFound() {
 }
 
 function ProductDetail() {
-  const { product } = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const { data: product, isLoading, error } = useProduct(id);
+  const { data: categories } = useCategories();
   const { addToCart, addToQuote } = useStore();
   const [qty, setQty] = useState(1);
-  const category = categoryBySlug(product.category);
+  const { data: related } = useRelatedProducts(product?.categoryId ?? "", product?.productId ?? "");
+  const category = categories?.find((c) => c.slug === product?.category);
+
+  if (isLoading) {
+    return (
+      <div className="container-page py-10">
+        <Skeleton className="h-4 w-48" />
+        <div className="mt-6 grid gap-10 lg:grid-cols-2">
+          <Skeleton className="aspect-4/3 w-full rounded-lg" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-10 w-40" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return <ProductNotFound />;
+  }
 
   return (
     <div className="container-page py-10">
@@ -91,8 +98,8 @@ function ProductDetail() {
           </p>
           <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight">{product.name}</h1>
           <div className="mt-3 flex items-center gap-2">
-            <Badge variant={product.stock === "in-stock" ? "default" : "secondary"}>
-              {stockLabel[product.stock]}
+            <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
+              {stockLabel(product.stock_quantity, product.low_stock_threshold)}
             </Badge>
             {product.bestSeller && <Badge className="bg-accent text-accent-foreground">Best seller</Badge>}
           </div>
@@ -184,7 +191,7 @@ function ProductDetail() {
       <section className="mt-14">
         <h2 className="font-display text-xl font-extrabold">Related products</h2>
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {relatedProducts(product).map((p) => (
+          {(related ?? []).map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>

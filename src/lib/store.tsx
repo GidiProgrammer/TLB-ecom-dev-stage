@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { products } from "@/lib/catalog";
 
 export type LineItem = { id: string; qty: number };
 
@@ -17,7 +16,6 @@ type StoreState = {
   clearQuote: () => void;
   cartCount: number;
   quoteCount: number;
-  cartSubtotal: number;
 };
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -62,13 +60,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const addToCart = useCallback((id: string, qty = 1) => setCart((c) => upsert(c, id, qty)), []);
   const addToQuote = useCallback((id: string, qty = 1) => setQuote((q) => upsert(q, id, qty)), []);
 
-  const value = useMemo<StoreState>(() => {
-    const cartSubtotal = cart.reduce((sum, line) => {
-      const product = products.find((p) => p.id === line.id);
-      return sum + (product ? product.price * line.qty : 0);
-    }, 0);
-
-    return {
+  const value = useMemo<StoreState>(
+    () => ({
       cart,
       quote,
       addToCart,
@@ -83,9 +76,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       clearQuote: () => setQuote([]),
       cartCount: cart.reduce((n, l) => n + l.qty, 0),
       quoteCount: quote.reduce((n, l) => n + l.qty, 0),
-      cartSubtotal,
-    };
-  }, [cart, quote, addToCart, addToQuote]);
+    }),
+    [cart, quote, addToCart, addToQuote],
+  );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

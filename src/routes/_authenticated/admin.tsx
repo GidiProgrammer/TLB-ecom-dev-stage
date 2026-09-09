@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Box, FileText, ShieldAlert, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { formatGHS, products } from "@/lib/catalog";
+import { formatGHS } from "@/lib/catalog-utils";
+import { useProducts } from "@/lib/queries/products";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -45,13 +46,14 @@ function Admin() {
     },
   });
 
+  const { data: products } = useProducts();
   const revenue = (orders.data ?? []).reduce((s, o) => s + Number(o.total), 0);
 
   const stats = [
     { icon: Box, label: "Orders visible", value: String(orders.data?.length ?? 0) },
     { icon: FileText, label: "Quote requests", value: String(quotes.data?.length ?? 0) },
     { icon: Users, label: "Order value", value: formatGHS(revenue) },
-    { icon: Box, label: "Catalogue lines", value: String(products.length) },
+    { icon: Box, label: "Catalogue lines", value: String(products?.length ?? 0) },
   ];
 
   return (

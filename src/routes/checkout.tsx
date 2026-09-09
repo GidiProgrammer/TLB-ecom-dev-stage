@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQueries } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { formatGHS, productById } from "@/lib/catalog";
-import { useStore } from "@/lib/store";
+import { formatGHS } from "@/lib/catalog-utils";
+import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
+import { useStore, type LineItem } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { createOrder } from "@/lib/orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +24,39 @@ export const Route = createFileRoute("/checkout")({
   component: Checkout,
 });
 
+function CheckoutLine({ line }: { line: LineItem }) {
+  const { data: product, isLoading } = useProduct(line.id);
+  if (isLoading) {
+    return (
+      <li className="flex justify-between gap-3 text-muted-foreground">
+        <span>Loading…</span>
+      </li>
+    );
+  }
+  if (!product) return null;
+  return (
+    <li className="flex justify-between gap-3">
+      <span className="text-muted-foreground">
+        {line.qty} × {product.name}
+      </span>
+      <span>{formatGHS(product.price * line.qty)}</span>
+    </li>
+  );
+}
+
 function Checkout() {
-  const { cart, cartSubtotal, clearCart } = useStore();
+  const { cart, clearCart } = useStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
+  const lineQueries = useQueries({
+    queries: cart.map((line) => ({
+      queryKey: ["product", line.id],
+      queryFn: () => fetchProductBySlug(line.id),
+      enabled: Boolean(line.id),
+    })),
+  });
   const [form, setForm] = useState({
     name: "",
     email: user?.email ?? "",
@@ -41,11 +71,12 @@ function Checkout() {
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const items = cart
-    .map((l) => {
-      const p = productById(l.id);
+    .map((l, i) => {
+      const p = lineQueries[i]?.data;
       return p ? { id: p.id, name: p.name, qty: l.qty, price: p.price, unit: p.unit } : null;
     })
     .filter(Boolean);
+  const cartSubtotal = items.reduce((sum, i) => sum + (i ? i.price * i.qty : 0), 0);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,30 +86,55 @@ function Checkout() {
       return;
     }
     setBusy(true);
-    const reference = `TLB-${Date.now().toString().slice(-8)}`;
-    const { error } = await supabase.from("orders").insert({
-      user_id: user.id,
-      reference,
-      status: "pending",
-      subtotal: cartSubtotal,
-      total: cartSubtotal,
-      shipping_name: form.name,
-      shipping_email: form.email,
-      shipping_phone: form.phone,
-      shipping_address: `${form.address}${form.notes ? ` — ${form.notes}` : ""}`,
-      shipping_city: form.city,
-      institution: form.institution || null,
-      items: items as unknown as never,
-    });
-    setBusy(false);
-    if (error) {
-      toast.error("Could not place order", { description: error.message });
-      return;
+    try {
+      const orderItems = cart.flatMap((l, i) => {
+        const p = lineQueries[i]?.data;
+        return p ? [{ product_id: p.productId, quantity: l.qty }] : [];
+      });
+      if (orderItems.length !== cart.length) {
+        throw new Error("Some products in your cart could not be loaded. Please refresh and try again.");
+      }
+
+      const { orderId } = await createOrder({
+        data: {
+          userId: user.id,
+          institution: form.institution.trim() ? form.institution.trim() : null,
+          shipping: {
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+            address: form.address,
+            city: form.city,
+            notes: form.notes || undefined,
+          },
+          items: orderItems,
+        },
+      });
+
+      clearCart();
+      setConfirmedOrderId(orderId);
+      toast.success("Order received", { description: "Our team will confirm pricing and delivery." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not place order";
+      toast.error("Could not place order", { description: message });
+    } finally {
+      setBusy(false);
     }
-    clearCart();
-    toast.success(`Order ${reference} received`, { description: "Our team will confirm pricing and delivery." });
-    navigate({ to: "/account" });
   };
+
+  if (confirmedOrderId) {
+    return (
+      <div className="container-page py-24 text-center">
+        <h1 className="font-display text-2xl font-extrabold">Order confirmed</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Your order has been placed and is pending confirmation. Reference: {confirmedOrderId}
+        </p>
+        <Button asChild className="mt-6">
+          <Link to="/account">View your orders</Link>
+        </Button>
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (
@@ -138,13 +194,8 @@ function Checkout() {
         <aside className="h-fit rounded-md border border-border bg-card p-5">
           <h2 className="font-display text-base font-bold">Your order</h2>
           <ul className="mt-4 space-y-2 text-sm">
-            {items.map((i) => (
-              <li key={i!.id} className="flex justify-between gap-3">
-                <span className="text-muted-foreground">
-                  {i!.qty} × {i!.name}
-                </span>
-                <span>{formatGHS(i!.price * i!.qty)}</span>
-              </li>
+            {cart.map((line) => (
+              <CheckoutLine key={line.id} line={line} />
             ))}
           </ul>
           <div className="mt-4 flex justify-between border-t border-border pt-3 font-display text-base font-extrabold">

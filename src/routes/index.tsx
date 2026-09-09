@@ -9,10 +9,12 @@ import {
   Truck,
 } from "lucide-react";
 import heroLab from "@/assets/hero-lab.jpg";
-import { bestSellers, categories, COMPANY } from "@/lib/catalog";
+import { COMPANY } from "@/lib/catalog-utils";
 import { brands, testimonials, articles } from "@/lib/content";
+import { useBestSellers, useCategories } from "@/lib/queries/products";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -42,7 +44,8 @@ const promises = [
 ];
 
 function Home() {
-  const featured = bestSellers().slice(0, 8);
+  const { data: featured, isLoading: featuredLoading, error: featuredError } = useBestSellers(8);
+  const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCategories();
 
   return (
     <>
@@ -127,7 +130,17 @@ function Home() {
         </div>
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((c) => (
+          {categoriesLoading
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-4/3 w-full rounded-md" />
+              ))
+            : categoriesError
+              ? (
+                <p className="text-sm text-muted-foreground sm:col-span-2 lg:col-span-4">
+                  Could not load categories. Please try again shortly.
+                </p>
+              )
+              : (categories ?? []).map((c) => (
             <Link
               key={c.slug}
               to="/shop"
@@ -160,7 +173,17 @@ function Home() {
             </Link>
           </div>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {featured.map((p) => (
+            {featuredLoading
+              ? Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="aspect-4/3 w-full rounded-md" />
+                ))
+              : featuredError
+                ? (
+                  <p className="text-sm text-muted-foreground sm:col-span-2 lg:col-span-4">
+                    Could not load best sellers. Please try again shortly.
+                  </p>
+                )
+                : (featured ?? []).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
