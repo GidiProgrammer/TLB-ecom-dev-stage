@@ -126,7 +126,7 @@ export function Header() {
             aria-label="Search products"
             className="rounded-none"
           />
-          <Button type="submit" className="rounded-l-none bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button type="submit" className="rounded-l-none bg-accent text-accent-foreground hover:bg-accent/90" aria-label="Search">
             <Search className="h-4 w-4" />
           </Button>
         </form>
@@ -221,7 +221,7 @@ export function Header() {
           placeholder="Search products…"
           aria-label="Search products"
         />
-        <Button type="submit" size="icon" className="bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button type="submit" size="icon" className="bg-accent text-accent-foreground hover:bg-accent/90" aria-label="Search">
           <Search className="h-4 w-4" />
         </Button>
       </form>

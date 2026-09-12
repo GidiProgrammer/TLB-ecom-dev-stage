@@ -15,18 +15,14 @@ import {
 type ShopSearch = {
   q?: string | undefined;
   category?: string | undefined;
-  sub?: string | undefined;
   sort?: string | undefined;
-  max?: number | undefined;
 };
 
 export const Route = createFileRoute("/shop")({
   validateSearch: (search: Record<string, unknown>): ShopSearch => ({
-    q: typeof search['q'] === "string" && search['q'] ? search['q'] : undefined,
-    category: typeof search['category'] === "string" ? search['category'] : undefined,
-    sub: typeof search['sub'] === "string" ? search['sub'] : undefined,
-    sort: typeof search['sort'] === "string" ? search['sort'] : undefined,
-    max: typeof search['max'] === "number" ? search['max'] : undefined,
+    q: typeof search["q"] === "string" && search["q"] ? search["q"] : undefined,
+    category: typeof search["category"] === "string" ? search["category"] : undefined,
+    sort: typeof search["sort"] === "string" ? search["sort"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -39,7 +35,7 @@ export const Route = createFileRoute("/shop")({
       { property: "og:title", content: "Shop laboratory supplies — TLB Enterprise" },
       {
         property: "og:description",
-        content: "Filter by category, brand and price across our full laboratory catalogue.",
+        content: "Filter by category and sort by name or price across our laboratory catalogue.",
       },
     ],
   }),
@@ -86,7 +82,8 @@ function Shop() {
             <ul className="mt-3 space-y-1 text-sm">
               <li>
                 <button
-                  onClick={() => setSearch({ category: undefined, sub: undefined })}
+                  type="button"
+                  onClick={() => setSearch({ category: undefined })}
                   className={activeCategory === "all" ? "font-semibold text-primary" : "text-muted-foreground hover:text-primary"}
                 >
                   All categories
@@ -99,7 +96,8 @@ function Shop() {
               ) : (categories ?? []).map((c) => (
                 <li key={c.slug}>
                   <button
-                    onClick={() => setSearch({ category: c.slug, sub: undefined })}
+                    type="button"
+                    onClick={() => setSearch({ category: c.slug })}
                     className={activeCategory === c.slug ? "text-left font-semibold text-primary" : "text-left text-muted-foreground hover:text-primary"}
                   >
                     {c.name}
@@ -130,12 +128,14 @@ function Shop() {
                 <> · from {formatGHS(Math.min(...results.map((r) => r.price)))}</>
               )}
             </p>
-            <Select value={search.sort ?? "relevance"} onValueChange={(v) => setSearch({ sort: v === "relevance" ? undefined : v })}>
-              <SelectTrigger className="w-48">
+            <Select
+              value={search.sort ?? "name"}
+              onValueChange={(v) => setSearch({ sort: v === "name" ? undefined : v })}
+            >
+              <SelectTrigger className="w-full sm:w-48" aria-label="Sort products">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="relevance">Sort: Relevance</SelectItem>
                 <SelectItem value="name">Name A–Z</SelectItem>
                 <SelectItem value="price-asc">Price: low to high</SelectItem>
                 <SelectItem value="price-desc">Price: high to low</SelectItem>

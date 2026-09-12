@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { FileText, ShoppingCart, FlaskConical, Check } from "lucide-react";
 import { toast } from "sonner";
-import { formatGHS, stockLabel } from "@/lib/catalog-utils";
+import { formatGHS, remainingPurchasableQty, stockLabel, stockStatus } from "@/lib/catalog-utils";
 import { fetchProductBySlug, useCategories, useRelatedProducts } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
@@ -81,10 +81,32 @@ function ProductLoadError() {
 function ProductDetail() {
   const { product } = Route.useLoaderData();
   const { data: categories } = useCategories();
-  const { addToCart, addToQuote } = useStore();
+  const { addToCart, addToQuote, cart } = useStore();
   const [qty, setQty] = useState(1);
   const { data: related } = useRelatedProducts(product.categoryId ?? "", product.productId);
   const category = categories?.find((c) => c.slug === product.categorySlug);
+  const status = stockStatus(product.stock_quantity, product.low_stock_threshold);
+  const inCart = cart.find((line) => line.id === product.id)?.qty ?? 0;
+  const remaining = remainingPurchasableQty(product.stock_quantity, inCart);
+  const canPurchase = remaining > 0;
+  const qtyToAdd = Math.min(Math.max(1, Math.floor(qty) || 1), Math.max(1, remaining));
+
+  const handleAddToCart = () => {
+    if (!canPurchase) {
+      toast.error("This product is out of stock");
+      return;
+    }
+    const requested = Math.max(1, Math.floor(qty) || 1);
+    const added = Math.min(requested, remaining);
+    addToCart(product.id, added);
+    if (added < requested) {
+      toast.success("Added available quantity", {
+        description: `${added} × ${product.name} (only ${remaining} more available)`,
+      });
+      return;
+    }
+    toast.success("Added to cart", { description: `${added} × ${product.name}` });
+  };
 
   return (
     <div className="container-page py-10">
@@ -106,9 +128,14 @@ function ProductDetail() {
         <div className="overflow-hidden rounded-lg border border-border bg-secondary">
           <img
             src={product.image}
-            alt={product.name}
+            alt={product.hasProductImage ? product.name : `Category illustration for ${product.name}`}
             className="aspect-4/3 w-full object-cover"
           />
+          {!product.hasProductImage ? (
+            <p className="border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground">
+              Category illustration — a product photograph is not available yet.
+            </p>
+          ) : null}
         </div>
 
         <div>
@@ -119,7 +146,7 @@ function ProductDetail() {
           ) : null}
           <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight">{product.name}</h1>
           <div className="mt-3 flex items-center gap-2">
-            <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
+            <Badge variant={status === "in-stock" ? "default" : "secondary"}>
               {stockLabel(product.stock_quantity, product.low_stock_threshold)}
             </Badge>
             {product.sku ? <Badge variant="secondary">{product.sku}</Badge> : null}
@@ -136,35 +163,52 @@ function ProductDetail() {
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Input
-              type="number"
-              min={1}
-              value={qty}
-              aria-label="Quantity"
-              onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
-              className="w-24"
-            />
-            <Button
-              size="lg"
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={() => {
-                addToCart(product.id, qty);
-                toast.success("Added to cart", { description: `${qty} × ${product.name}` });
-              }}
-            >
-              <ShoppingCart className="h-4 w-4" /> Add to cart
-            </Button>
+            {canPurchase ? (
+              <>
+                <Input
+                  type="number"
+                  min={1}
+                  max={remaining}
+                  step={1}
+                  value={qtyToAdd}
+                  aria-label="Quantity"
+                  onChange={(e) => {
+                    const next = Math.floor(Number(e.target.value));
+                    if (!Number.isFinite(next) || next < 1) {
+                      setQty(1);
+                      return;
+                    }
+                    setQty(Math.min(next, remaining));
+                  }}
+                  className="w-24"
+                />
+                <Button
+                  size="lg"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={handleAddToCart}
+                >
+                  <ShoppingCart className="h-4 w-4" /> Add to cart
+                </Button>
+              </>
+            ) : (
+              <Button size="lg" disabled>
+                Out of stock
+              </Button>
+            )}
             <Button
               size="lg"
               variant="outline"
               onClick={() => {
-                addToQuote(product.id, qty);
+                addToQuote(product.id, canPurchase ? qtyToAdd : 1);
                 toast.success("Added to quote request", { description: product.name });
               }}
             >
               <FileText className="h-4 w-4" /> Add to quote
             </Button>
           </div>
+          {status === "low-stock" && canPurchase ? (
+            <p className="mt-2 text-xs text-muted-foreground">Limited availability. Stock is confirmed when you place the order.</p>
+          ) : null}
 
           <div className="mt-6 rounded-md border border-border bg-primary-soft p-4 text-xs text-muted-foreground">
             <p className="flex items-center gap-2 font-semibold text-foreground">

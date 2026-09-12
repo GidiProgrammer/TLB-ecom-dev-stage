@@ -80,6 +80,11 @@ function Checkout() {
   const cartSubtotal = items.reduce((sum, i) => sum + (i ? i.price * i.qty : 0), 0);
   const linesLoading = lineQueries.some((q) => q.isLoading);
   const linesMissing = cart.some((_, i) => !lineQueries[i]?.data);
+  const linesUnavailable = cart.some((line, i) => {
+    const p = lineQueries[i]?.data;
+    if (!p) return false;
+    return p.stock_quantity <= 0 || line.qty > p.stock_quantity;
+  });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +178,11 @@ function Checkout() {
               <p className="mt-1 text-destructive/80">Your cart and form details have been kept. You can correct the issue and try again.</p>
             </div>
           )}
+          {linesUnavailable ? (
+            <div role="status" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              One or more items are out of stock or exceed current stock. Return to your cart to update quantities.
+            </div>
+          ) : null}
           <h2 className="font-display text-base font-bold">Delivery details</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -219,7 +229,7 @@ function Checkout() {
           </div>
           <Button
             type="submit"
-            disabled={busy || linesLoading || linesMissing}
+            disabled={busy || linesLoading || linesMissing || linesUnavailable}
             className="mt-5 w-full bg-accent text-accent-foreground hover:bg-accent/90"
           >
             {busy ? "Submitting…" : "Place order"}

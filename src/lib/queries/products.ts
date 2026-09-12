@@ -26,6 +26,8 @@ export type CatalogProduct = {
   unit: string;
   sku: string | null;
   image: string;
+  /** True when `products.image_url` is set; otherwise `image` is a category illustration. */
+  hasProductImage: boolean;
   stock_quantity: number;
   low_stock_threshold: number;
 };
@@ -72,6 +74,7 @@ function mapProduct(row: ProductWithCategory): CatalogProduct {
     unit: row.unit_label ?? "",
     sku: row.sku,
     image: row.image_url || productImage(categorySlug),
+    hasProductImage: Boolean(row.image_url?.trim()),
     stock_quantity: Number(row.stock_quantity ?? 0),
     low_stock_threshold: Number(row.low_stock_threshold ?? 5),
   };

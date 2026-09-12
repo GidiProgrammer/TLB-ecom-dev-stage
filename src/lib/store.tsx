@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 export type LineItem = { id: string; qty: number };
@@ -50,11 +50,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<LineItem[]>([]);
   const [quote, setQuote] = useState<LineItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const mutatedBeforeHydrate = useRef(false);
 
   useEffect(() => {
     const initial = readStorage();
-    setCart(initial.cart);
-    setQuote(initial.quote);
+    setCart((current) => (mutatedBeforeHydrate.current ? current : initial.cart));
+    setQuote((current) => (mutatedBeforeHydrate.current ? current : initial.quote));
     setHydrated(true);
   }, []);
 
@@ -63,8 +64,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(KEY, JSON.stringify({ cart, quote }));
   }, [cart, quote, hydrated]);
 
-  const addToCart = useCallback((id: string, qty = 1) => setCart((c) => upsert(c, id, qty)), []);
-  const addToQuote = useCallback((id: string, qty = 1) => setQuote((q) => upsert(q, id, qty)), []);
+  const addToCart = useCallback((id: string, qty = 1) => {
+    mutatedBeforeHydrate.current = true;
+    setCart((c) => upsert(c, id, qty));
+  }, []);
+  const addToQuote = useCallback((id: string, qty = 1) => {
+    mutatedBeforeHydrate.current = true;
+    setQuote((q) => upsert(q, id, qty));
+  }, []);
 
   const value = useMemo<StoreState>(
     () => ({
@@ -72,20 +79,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       quote,
       addToCart,
       addToQuote,
-      setCartQty: (id, qty) =>
+      setCartQty: (id, qty) => {
+        mutatedBeforeHydrate.current = true;
         setCart((c) => {
           if (!Number.isFinite(qty) || qty <= 0) return c.filter((l) => l.id !== id);
           return c.map((l) => (l.id === id ? { ...l, qty: Math.floor(qty) } : l));
-        }),
-      removeFromCart: (id) => setCart((c) => c.filter((l) => l.id !== id)),
-      clearCart: () => setCart([]),
-      setQuoteQty: (id, qty) =>
+        });
+      },
+      removeFromCart: (id) => {
+        mutatedBeforeHydrate.current = true;
+        setCart((c) => c.filter((l) => l.id !== id));
+      },
+      clearCart: () => {
+        mutatedBeforeHydrate.current = true;
+        setCart([]);
+      },
+      setQuoteQty: (id, qty) => {
+        mutatedBeforeHydrate.current = true;
         setQuote((q) => {
           if (!Number.isFinite(qty) || qty <= 0) return q.filter((l) => l.id !== id);
           return q.map((l) => (l.id === id ? { ...l, qty: Math.floor(qty) } : l));
-        }),
-      removeFromQuote: (id) => setQuote((q) => q.filter((l) => l.id !== id)),
-      clearQuote: () => setQuote([]),
+        });
+      },
+      removeFromQuote: (id) => {
+        mutatedBeforeHydrate.current = true;
+        setQuote((q) => q.filter((l) => l.id !== id));
+      },
+      clearQuote: () => {
+        mutatedBeforeHydrate.current = true;
+        setQuote([]);
+      },
       cartCount: cart.reduce((n, l) => n + l.qty, 0),
       quoteCount: quote.reduce((n, l) => n + l.qty, 0),
     }),
