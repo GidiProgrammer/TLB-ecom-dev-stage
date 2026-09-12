@@ -38,6 +38,23 @@ sb_secret*
 .wrangler/
 .dev.vars
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+.playwright-mcp/
+e2e-audit-*.png
+playwright-*.png
+e2e/mcp-*.js
+
+# Supabase CLI cache / local probes
+supabase/.temp/
+
+# Editor (local MCP config)
+.cursor/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
