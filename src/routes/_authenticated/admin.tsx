@@ -1,15 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, FileText, ShieldAlert, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { formatGHS } from "@/lib/catalog-utils";
 import { Constants } from "@/integrations/supabase/types";
-import { useProducts } from "@/lib/queries/products";
+import { listAdminProducts } from "@/lib/catalog-ops";
 import { useAdminOrders, useAdminQuotes, useAdminProfiles, type AdminOrder, type AdminQuote, type AdminProfile } from "@/lib/queries/admin";
 import { updateOrderStatus, updateQuoteItemPrice, updateQuoteStatus, updateProfileApproval } from "@/lib/admin-ops";
 import { requireStaffAccess } from "@/lib/staff";
+import { CatalogueManager } from "@/components/admin/CatalogueManager";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,14 +65,14 @@ function Admin() {
   const orders = useAdminOrders(user?.id);
   const quotes = useAdminQuotes(user?.id);
   const profiles = useAdminProfiles(user?.id);
-  const { data: products } = useProducts();
+  const catalogue = useQuery({ queryKey: ["admin-catalogue"], queryFn: () => listAdminProducts() });
   const revenue = (orders.data ?? []).reduce((s, o) => s + Number(o.total), 0);
 
   const stats = [
     { icon: Box, label: "Orders visible", value: String(orders.data?.length ?? 0) },
     { icon: FileText, label: "Quote requests", value: String(quotes.data?.length ?? 0) },
     { icon: Users, label: "Order value", value: formatGHS(revenue) },
-    { icon: Box, label: "Catalogue lines", value: String(products?.length ?? 0) },
+    { icon: Box, label: "Catalogue lines", value: String(catalogue.data?.length ?? 0) },
   ];
 
   return (
@@ -85,8 +86,9 @@ function Admin() {
       <div className="mt-6 flex items-start gap-3 rounded-md border border-border bg-primary-soft p-4 text-xs text-muted-foreground">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
         <p>
-          Status, quoted-price, and institutional approval changes run on the server. Approval
-          changes are limited to the admin role. Totals, line items, and stock are not editable here.
+          Order status, quoted prices, institutional approval, and catalogue edits run on the server.
+          Approval changes and product restore are limited to the admin role. Stock quantity is not
+          editable in this catalogue.
         </p>
       </div>
 
@@ -104,6 +106,7 @@ function Admin() {
         <TabsList>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="quotes">Quotes</TabsTrigger>
+          <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
         </TabsList>
         <TabsContent value="orders" className="mt-4">
@@ -123,6 +126,9 @@ function Admin() {
           ) : (
             <QuoteList quotes={quotes.data ?? []} />
           )}
+        </TabsContent>
+        <TabsContent value="catalogue" className="mt-4">
+          <CatalogueManager canRestore={access.isAdmin} />
         </TabsContent>
         <TabsContent value="accounts" className="mt-4">
           {profiles.isLoading ? (
