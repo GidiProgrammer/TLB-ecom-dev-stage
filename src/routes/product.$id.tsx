@@ -1,28 +1,56 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { FileText, ShoppingCart, FlaskConical, Check } from "lucide-react";
 import { toast } from "sonner";
-import { formatGHS, productImage, stockLabel } from "@/lib/catalog-utils";
-import { useCategories, useProduct, useRelatedProducts } from "@/lib/queries/products";
+import { formatGHS, stockLabel } from "@/lib/catalog-utils";
+import { fetchProductBySlug, useCategories, useRelatedProducts } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
+
+function productMetaDescription(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return "Laboratory supply from TLB Enterprise.";
+  return trimmed.length > 155 ? `${trimmed.slice(0, 152).trimEnd()}…` : trimmed;
+}
 
 export const Route = createFileRoute("/product/$id")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `${params.id} — TLB Enterprise` },
-      { name: "description", content: "Laboratory product details from TLB Enterprise." },
-      { property: "og:title", content: `${params.id} — TLB Enterprise` },
-      { property: "og:description", content: "Laboratory product details from TLB Enterprise." },
-    ],
-  }),
+  loader: async ({ params, context }) => {
+    const product = await context.queryClient.ensureQueryData({
+      queryKey: ["product", params.id],
+      queryFn: () => fetchProductBySlug(params.id),
+    });
+    if (!product) throw notFound();
+    return { product };
+  },
+  head: ({ loaderData }) => {
+    if (!loaderData?.product) {
+      return {
+        meta: [
+          { title: "Product not available — TLB Enterprise" },
+          { name: "description", content: "This laboratory product is not available from TLB Enterprise." },
+          { name: "robots", content: "noindex" },
+          { property: "og:title", content: "Product not available — TLB Enterprise" },
+          { property: "og:description", content: "This laboratory product is not available from TLB Enterprise." },
+        ],
+      };
+    }
+    const { product } = loaderData;
+    const description = productMetaDescription(product.description);
+    return {
+      meta: [
+        { title: `${product.name} — TLB Enterprise` },
+        { name: "description", content: description },
+        { property: "og:title", content: `${product.name} — TLB Enterprise` },
+        { property: "og:description", content: description },
+      ],
+    };
+  },
   notFoundComponent: ProductNotFound,
-  errorComponent: ProductNotFound,
+  errorComponent: ProductLoadError,
   component: ProductDetail,
 });
 
@@ -38,34 +66,25 @@ function ProductNotFound() {
   );
 }
 
+function ProductLoadError() {
+  return (
+    <div className="container-page py-24 text-center">
+      <h1 className="font-display text-2xl font-extrabold">Could not load this product</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Please try again shortly.</p>
+      <Button asChild className="mt-6">
+        <Link to="/shop">Back to shop</Link>
+      </Button>
+    </div>
+  );
+}
+
 function ProductDetail() {
-  const { id } = Route.useParams();
-  const { data: product, isLoading, error } = useProduct(id);
+  const { product } = Route.useLoaderData();
   const { data: categories } = useCategories();
   const { addToCart, addToQuote } = useStore();
   const [qty, setQty] = useState(1);
-  const { data: related } = useRelatedProducts(product?.categoryId ?? "", product?.productId ?? "");
-  const category = categories?.find((c) => c.slug === product?.category);
-
-  if (isLoading) {
-    return (
-      <div className="container-page py-10">
-        <Skeleton className="h-4 w-48" />
-        <div className="mt-6 grid gap-10 lg:grid-cols-2">
-          <Skeleton className="aspect-4/3 w-full rounded-lg" />
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-40" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return <ProductNotFound />;
-  }
+  const { data: related } = useRelatedProducts(product.categoryId ?? "", product.productId);
+  const category = categories?.find((c) => c.slug === product.categorySlug);
 
   return (
     <div className="container-page py-10">
@@ -86,22 +105,24 @@ function ProductDetail() {
       <div className="mt-6 grid gap-10 lg:grid-cols-2">
         <div className="overflow-hidden rounded-lg border border-border bg-secondary">
           <img
-            src={productImage(product.category)}
+            src={product.image}
             alt={product.name}
             className="aspect-4/3 w-full object-cover"
           />
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {product.brand} · {product.subcategory}
-          </p>
+          {product.categoryName ? (
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {product.categoryName}
+            </p>
+          ) : null}
           <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight">{product.name}</h1>
           <div className="mt-3 flex items-center gap-2">
             <Badge variant={product.stock_quantity > 0 ? "default" : "secondary"}>
               {stockLabel(product.stock_quantity, product.low_stock_threshold)}
             </Badge>
-            {product.bestSeller && <Badge className="bg-accent text-accent-foreground">Best seller</Badge>}
+            {product.sku ? <Badge variant="secondary">{product.sku}</Badge> : null}
           </div>
 
           <p className="mt-5 text-sm text-muted-foreground">{product.description}</p>
@@ -166,12 +187,21 @@ function ProductDetail() {
         </TabsList>
         <TabsContent value="specs" className="mt-4">
           <dl className="grid max-w-2xl gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-2">
-            {product.specs.map((s) => (
-              <div key={s.label} className="bg-card p-4">
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</dt>
-                <dd className="mt-1 text-sm font-medium">{s.value}</dd>
-              </div>
-            ))}
+            {[
+              product.sku ? { label: "SKU", value: product.sku } : null,
+              product.unit ? { label: "Unit", value: product.unit } : null,
+              {
+                label: "Availability",
+                value: stockLabel(product.stock_quantity, product.low_stock_threshold),
+              },
+            ]
+              .filter((row): row is { label: string; value: string } => row !== null)
+              .map((s) => (
+                <div key={s.label} className="bg-card p-4">
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</dt>
+                  <dd className="mt-1 text-sm font-medium">{s.value}</dd>
+                </div>
+              ))}
           </dl>
         </TabsContent>
         <TabsContent value="delivery" className="mt-4 max-w-2xl space-y-2 text-sm text-muted-foreground">

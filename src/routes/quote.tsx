@@ -7,7 +7,7 @@ import { formatGHS } from "@/lib/catalog-utils";
 import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
 import { useStore, type LineItem } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { createQuote } from "@/lib/quotes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,7 +52,16 @@ function QuoteLine({
     );
   }
 
-  if (error || !p) return null;
+  if (error || !p) {
+    return (
+      <div className="flex items-center justify-between gap-4 p-4">
+        <p className="text-sm text-muted-foreground">This product is no longer available.</p>
+        <Button variant="ghost" size="sm" onClick={() => removeFromQuote(line.id)}>
+          Remove
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-4 p-4">
@@ -61,7 +70,8 @@ function QuoteLine({
           {p.name}
         </Link>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {p.brand} · list {formatGHS(p.price)} / {p.unit}
+          list {formatGHS(p.price)}
+          {p.unit ? ` / ${p.unit}` : ""}
         </p>
       </div>
       <Input
@@ -102,6 +112,9 @@ function QuotePage() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const linesLoading = lineQueries.some((q) => q.isLoading);
+  const linesMissing = quote.some((_, i) => !lineQueries[i]?.data);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (quote.length === 0) {
@@ -114,30 +127,40 @@ function QuotePage() {
       return;
     }
     setBusy(true);
-    const reference = `QT-${Date.now().toString().slice(-8)}`;
-    const items = quote.map((l, i) => {
-      const p = lineQueries[i]?.data;
-      return { id: l.id, name: p?.name ?? l.id, qty: l.qty, price: p?.price ?? 0, unit: p?.unit ?? "" };
-    });
-    const { error } = await supabase.from("quotes").insert({
-      user_id: user.id,
-      reference,
-      status: "submitted",
-      notes: form.notes,
-      contact_name: form.name,
-      contact_email: form.email,
-      contact_phone: form.phone,
-      institution: form.institution || null,
-      items: items as unknown as never,
-    });
-    setBusy(false);
-    if (error) {
-      toast.error("Could not submit request", { description: error.message });
-      return;
+    try {
+      const quoteItems = quote.flatMap((l, i) => {
+        const p = lineQueries[i]?.data;
+        return p ? [{ product_id: p.productId, quantity: l.qty }] : [];
+      });
+      if (quoteItems.length !== quote.length) {
+        throw new Error("Some products in your quote list could not be loaded. Please refresh and try again.");
+      }
+
+      const { reference } = await createQuote({
+        data: {
+          userId: user.id,
+          institution: form.institution.trim() ? form.institution.trim() : null,
+          contact: {
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+          },
+          notes: form.notes.trim() ? form.notes.trim() : undefined,
+          items: quoteItems,
+        },
+      });
+
+      clearQuote();
+      toast.success(`Quote request ${reference} submitted`, {
+        description: "We typically respond within one working day.",
+      });
+      navigate({ to: "/account" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Quote creation failed";
+      toast.error("Could not submit request", { description: message });
+    } finally {
+      setBusy(false);
     }
-    clearQuote();
-    toast.success(`Quote request ${reference} submitted`, { description: "We typically respond within one working day." });
-    navigate({ to: "/account" });
   };
 
   return (
@@ -208,7 +231,7 @@ function QuotePage() {
               className="mt-1.5"
             />
           </div>
-          <Button type="submit" disabled={busy} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button type="submit" disabled={busy || linesLoading || linesMissing} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
             {busy ? "Submitting…" : "Submit quote request"}
           </Button>
           {!user && (

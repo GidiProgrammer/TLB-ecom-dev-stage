@@ -157,7 +157,7 @@ function Home() {
               </div>
               <div className="p-4">
                 <h3 className="font-display text-sm font-bold group-hover:text-primary">{c.name}</h3>
-                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{c.blurb}</p>
+                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
               </div>
             </Link>
           ))}

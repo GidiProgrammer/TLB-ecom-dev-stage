@@ -1,153 +1,106 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { productImage } from "@/lib/catalog-utils";
+import type { Tables } from "@/integrations/supabase/types";
 
 export type CatalogCategory = {
   id: string;
   slug: string;
   name: string;
-  blurb: string;
   description: string;
   image: string;
-  subcategories: { name: string; note: string }[];
 };
 
 export type CatalogProduct = {
+  /** Catalogue URL and cart/quote list key (`products.slug`). */
   id: string;
+  slug: string;
+  /** Live `products.id` (text). Used for order/quote RPCs. */
   productId: string;
-  categoryId: string;
   name: string;
-  category: string;
-  subcategory: string;
+  description: string;
+  categoryId: string | null;
+  categorySlug: string;
+  categoryName: string;
   price: number;
   unit: string;
-  brand: string;
-  stock: "in-stock" | "low-stock" | "backorder";
+  sku: string | null;
+  image: string;
   stock_quantity: number;
   low_stock_threshold: number;
-  bestSeller?: boolean;
-  description: string;
-  specs: { label: string; value: string }[];
 };
 
-type CategoryRow = {
-  id: string;
-  slug: string;
-  name: string;
-  blurb?: string | null;
-  description?: string | null;
-  subcategories?: { name: string; note: string }[] | null;
+type CategoryRow = Tables<"categories">;
+type ProductRow = Tables<"products">;
+type ProductWithCategory = ProductRow & {
+  categories: CategoryRow | CategoryRow[] | null;
 };
 
-type ProductRow = {
-  id: string;
-  slug: string;
-  name: string;
-  description?: string | null;
-  price: number | string;
-  unit_label?: string | null;
-  stock_quantity?: number | null;
-  low_stock_threshold?: number | null;
-  brand?: string | null;
-  subcategory?: string | null;
-  specs?: { label: string; value: string }[] | null;
-  category_id: string;
-  categories?: CategoryRow | CategoryRow[] | null;
-};
-
-type CatalogClient = {
-  from: (relation: string) => {
-    select: (columns: string) => CatalogQuery;
-  };
-};
-
-type CatalogQuery = {
-  select: (columns: string) => CatalogQuery;
-  eq: (column: string, value: string) => CatalogQuery;
-  neq: (column: string, value: string) => CatalogQuery;
-  or: (filters: string) => CatalogQuery;
-  order: (column: string, options?: { ascending?: boolean }) => CatalogQuery;
-  limit: (count: number) => CatalogQuery;
-  maybeSingle: () => Promise<{ data: unknown; error: { message: string } | null }>;
-  then: Promise<{ data: unknown[] | null; error: { message: string } | null }>["then"];
-};
-
-const fromTable = (table: "categories" | "products") =>
-  (supabase as unknown as CatalogClient).from(table);
-
-function asError(error: { message: string } | null): Error | null {
-  return error ? new Error(error.message) : null;
+function loadError(fallback: string, error: { message: string } | null): Error | null {
+  return error ? new Error(fallback) : null;
 }
 
-function categoryFromJoin(row: ProductRow): CategoryRow | null {
+function categoryFromJoin(row: ProductWithCategory): CategoryRow | null {
   const cat = row.categories;
   if (!cat) return null;
   return Array.isArray(cat) ? (cat[0] ?? null) : cat;
 }
 
 function mapCategory(row: CategoryRow): CatalogCategory {
-  const description = row.description ?? "";
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    blurb: row.blurb ?? description,
-    description,
+    description: row.description ?? "",
     image: productImage(row.slug),
-    subcategories: row.subcategories ?? [],
   };
 }
 
-function mapStock(quantity: number, threshold: number): CatalogProduct["stock"] {
-  if (quantity <= 0) return "backorder";
-  if (quantity <= threshold) return "low-stock";
-  return "in-stock";
-}
-
-function mapProduct(row: ProductRow): CatalogProduct {
+function mapProduct(row: ProductWithCategory): CatalogProduct {
   const category = categoryFromJoin(row);
-  const quantity = Number(row.stock_quantity ?? 0);
-  const threshold = Number(row.low_stock_threshold ?? 5);
+  const categorySlug = category?.slug ?? "";
   return {
     id: row.slug,
+    slug: row.slug,
     productId: row.id,
-    categoryId: row.category_id,
     name: row.name,
-    category: category?.slug ?? "",
-    subcategory: row.subcategory ?? "",
+    description: row.description ?? "",
+    categoryId: row.category_id,
+    categorySlug,
+    categoryName: category?.name ?? "",
     price: Number(row.price),
     unit: row.unit_label ?? "",
-    brand: row.brand ?? "",
-    stock: mapStock(quantity, threshold),
-    stock_quantity: quantity,
-    low_stock_threshold: threshold,
-    bestSeller: false,
-    description: row.description ?? "",
-    specs: row.specs ?? [],
+    sku: row.sku,
+    image: row.image_url || productImage(categorySlug),
+    stock_quantity: Number(row.stock_quantity ?? 0),
+    low_stock_threshold: Number(row.low_stock_threshold ?? 5),
   };
 }
 
-const PRODUCT_SELECT = "*, categories(*)";
+const PRODUCT_SELECT = "*, categories(*)" as const;
 
 function escapeIlike(value: string) {
   return value.replace(/[%_,]/g, " ").trim();
 }
 
 async function fetchCategories(): Promise<CatalogCategory[]> {
-  const { data, error } = await fromTable("categories").select("*").order("name");
-  const err = asError(error);
+  const { data, error } = await supabase.from("categories").select("*").order("name");
+  const err = loadError("Could not load categories", error);
   if (err) throw err;
-  return ((data ?? []) as unknown as CategoryRow[]).map(mapCategory);
+  return (data ?? []).map(mapCategory);
 }
 
 export async function fetchProductBySlug(slug: string): Promise<CatalogProduct | null> {
-  const { data, error } = await fromTable("products")
+  const { data, error } = await supabase
+    .from("products")
     .select(PRODUCT_SELECT)
+    .eq("is_active", true)
+    .is("deleted_at", null)
     .eq("slug", slug)
     .maybeSingle();
-  const err = asError(error);
+  const err = loadError("Could not load product", error);
   if (err) throw err;
-  return data ? mapProduct(data as unknown as ProductRow) : null;
+  return data ? mapProduct(data) : null;
 }
 
 async function fetchProducts(opts: {
@@ -156,9 +109,11 @@ async function fetchProducts(opts: {
   sort?: string | undefined;
 }): Promise<CatalogProduct[]> {
   const useInnerJoin = Boolean(opts.categorySlug && opts.categorySlug !== "all");
-  let query = fromTable("products").select(
-    useInnerJoin ? "*, categories!inner(*)" : PRODUCT_SELECT,
-  );
+  let query = supabase
+    .from("products")
+    .select(useInnerJoin ? "*, categories!inner(*)" : PRODUCT_SELECT)
+    .eq("is_active", true)
+    .is("deleted_at", null);
 
   if (useInnerJoin) {
     query = query.eq("categories.slug", opts.categorySlug!);
@@ -171,24 +126,25 @@ async function fetchProducts(opts: {
 
   if (opts.sort === "price-asc") query = query.order("price", { ascending: true });
   else if (opts.sort === "price-desc") query = query.order("price", { ascending: false });
-  else if (opts.sort === "name") query = query.order("name", { ascending: true });
   else query = query.order("name", { ascending: true });
 
   const { data, error } = await query;
-  const err = asError(error);
+  const err = loadError("Could not load products", error);
   if (err) throw err;
-  return ((data ?? []) as unknown as ProductRow[]).map(mapProduct);
+  return (data ?? []).map(mapProduct);
 }
 
 async function fetchBestSellers(limit: number): Promise<CatalogProduct[]> {
-  // TODO: add a featured/best_seller boolean column later
-  const { data, error } = await fromTable("products")
+  const { data, error } = await supabase
+    .from("products")
     .select(PRODUCT_SELECT)
+    .eq("is_active", true)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
-  const err = asError(error);
+  const err = loadError("Could not load products", error);
   if (err) throw err;
-  return ((data ?? []) as unknown as ProductRow[]).map(mapProduct);
+  return (data ?? []).map(mapProduct);
 }
 
 async function fetchRelatedProducts(
@@ -196,14 +152,17 @@ async function fetchRelatedProducts(
   excludeProductId: string,
   limit: number,
 ): Promise<CatalogProduct[]> {
-  const { data, error } = await fromTable("products")
+  const { data, error } = await supabase
+    .from("products")
     .select(PRODUCT_SELECT)
+    .eq("is_active", true)
+    .is("deleted_at", null)
     .eq("category_id", categoryId)
     .neq("id", excludeProductId)
     .limit(limit);
-  const err = asError(error);
+  const err = loadError("Could not load products", error);
   if (err) throw err;
-  return ((data ?? []) as unknown as ProductRow[]).map(mapProduct);
+  return (data ?? []).map(mapProduct);
 }
 
 export function useCategories() {

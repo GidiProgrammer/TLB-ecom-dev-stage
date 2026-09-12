@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatGHS } from "@/lib/catalog-utils";
+import { useAccountOrders, useAccountProfile, useAccountQuotes } from "@/lib/queries/account";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,42 +20,13 @@ export const Route = createFileRoute("/_authenticated/account")({
   component: Account,
 });
 
-type Item = { id: string; name: string; qty: number; price: number };
-
 function Account() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const profile = useQuery({
-    queryKey: ["profile", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", user!.id).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const orders = useQuery({
-    queryKey: ["orders", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const quotes = useQuery({
-    queryKey: ["quotes", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("quotes").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+  const profile = useAccountProfile(user?.id);
+  const orders = useAccountOrders(user?.id);
+  const quotes = useAccountQuotes(user?.id);
 
   const handleSignOut = async () => {
     await queryClient.cancelQueries();
@@ -78,7 +49,7 @@ function Account() {
             <Link to="/experiments">My experiments</Link>
           </Button>
           <Button variant="ghost" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4" /> Sign out
+            <LogOut className="h-4 w-4" aria-hidden="true" /> Sign out
           </Button>
         </div>
       </div>
@@ -121,6 +92,8 @@ function Account() {
         <TabsContent value="orders" className="mt-4">
           {orders.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading orders…</p>
+          ) : orders.error ? (
+            <p className="text-sm text-muted-foreground">Could not load orders. Please try again.</p>
           ) : !orders.data?.length ? (
             <EmptyState label="No orders yet" cta="Browse products" to="/shop" />
           ) : (
@@ -131,19 +104,27 @@ function Account() {
                     <div>
                       <p className="font-display text-sm font-bold">{o.reference}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(o.created_at).toLocaleDateString("en-GB")} · {(o.items as unknown as Item[]).length} line items
+                        {new Date(o.created_at).toLocaleDateString("en-GB")} · {o.order_items.length}{" "}
+                        {o.order_items.length === 1 ? "line item" : "line items"}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="capitalize">{o.status}</Badge>
+                      <Badge variant="secondary" className="capitalize">
+                        {o.status.replaceAll("_", " ")}
+                      </Badge>
                       <span className="font-display text-sm font-bold text-primary">{formatGHS(Number(o.total))}</span>
                     </div>
                   </div>
-                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                    {(o.items as unknown as Item[]).map((i) => (
-                      <li key={i.id}>{i.qty} × {i.name}</li>
-                    ))}
-                  </ul>
+                  {o.order_items.length > 0 ? (
+                    <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                      {o.order_items.map((item) => (
+                        <li key={item.id}>
+                          {item.quantity} × {item.product_name} · {formatGHS(Number(item.unit_price))} ·{" "}
+                          {formatGHS(Number(item.line_total))}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -153,6 +134,8 @@ function Account() {
         <TabsContent value="quotes" className="mt-4">
           {quotes.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading quote requests…</p>
+          ) : quotes.error ? (
+            <p className="text-sm text-muted-foreground">Could not load quote requests. Please try again.</p>
           ) : !quotes.data?.length ? (
             <EmptyState label="No quote requests yet" cta="Request a quote" to="/quote" />
           ) : (
@@ -163,17 +146,25 @@ function Account() {
                     <div>
                       <p className="font-display text-sm font-bold">{q.reference}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(q.created_at).toLocaleDateString("en-GB")} · {(q.items as unknown as Item[]).length} items
+                        {new Date(q.created_at).toLocaleDateString("en-GB")} · {q.quote_items.length}{" "}
+                        {q.quote_items.length === 1 ? "item" : "items"}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="capitalize">{q.status}</Badge>
+                    <Badge variant="secondary" className="capitalize">
+                      {q.status}
+                    </Badge>
                   </div>
                   {q.notes && <p className="mt-2 text-xs text-muted-foreground">{q.notes}</p>}
-                  <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                    {(q.items as unknown as Item[]).map((i) => (
-                      <li key={i.id}>{i.qty} × {i.name}</li>
-                    ))}
-                  </ul>
+                  {q.quote_items.length > 0 ? (
+                    <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                      {q.quote_items.map((item) => (
+                        <li key={item.id}>
+                          {item.quantity} × {item.product_name} ·{" "}
+                          {item.quoted_price == null ? "Pending" : formatGHS(Number(item.quoted_price))}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
               ))}
             </div>

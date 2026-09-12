@@ -49,6 +49,7 @@ function Checkout() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const lineQueries = useQueries({
     queries: cart.map((line) => ({
@@ -77,6 +78,8 @@ function Checkout() {
     })
     .filter(Boolean);
   const cartSubtotal = items.reduce((sum, i) => sum + (i ? i.price * i.qty : 0), 0);
+  const linesLoading = lineQueries.some((q) => q.isLoading);
+  const linesMissing = cart.some((_, i) => !lineQueries[i]?.data);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +89,7 @@ function Checkout() {
       return;
     }
     setBusy(true);
+    setSubmitError(null);
     try {
       const orderItems = cart.flatMap((l, i) => {
         const p = lineQueries[i]?.data;
@@ -95,7 +99,7 @@ function Checkout() {
         throw new Error("Some products in your cart could not be loaded. Please refresh and try again.");
       }
 
-      const { orderId } = await createOrder({
+      const { orderId, reference } = await createOrder({
         data: {
           userId: user.id,
           institution: form.institution.trim() ? form.institution.trim() : null,
@@ -112,10 +116,11 @@ function Checkout() {
       });
 
       clearCart();
-      setConfirmedOrderId(orderId);
+      setConfirmedOrderId(reference || orderId);
       toast.success("Order received", { description: "Our team will confirm pricing and delivery." });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not place order";
+      setSubmitError(message);
       toast.error("Could not place order", { description: message });
     } finally {
       setBusy(false);
@@ -158,6 +163,16 @@ function Checkout() {
 
       <form onSubmit={submit} className="mt-8 grid gap-8 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-5 rounded-md border border-border p-6">
+          {submitError && (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              <p className="font-semibold">Your order was not placed</p>
+              <p className="mt-1">{submitError}</p>
+              <p className="mt-1 text-destructive/80">Your cart and form details have been kept. You can correct the issue and try again.</p>
+            </div>
+          )}
           <h2 className="font-display text-base font-bold">Delivery details</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -204,7 +219,7 @@ function Checkout() {
           </div>
           <Button
             type="submit"
-            disabled={busy}
+            disabled={busy || linesLoading || linesMissing}
             className="mt-5 w-full bg-accent text-accent-foreground hover:bg-accent/90"
           >
             {busy ? "Submitting…" : "Place order"}

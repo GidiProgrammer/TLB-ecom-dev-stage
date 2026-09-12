@@ -58,7 +58,7 @@ function Shop() {
     categorySlug: activeCategory === "all" ? undefined : activeCategory,
     sort: search.sort,
   });
-  const results = (products ?? []).filter((p) => (search.sub ? p.subcategory === search.sub : true));
+  const results = products ?? [];
 
   const setSearch = (next: Partial<ShopSearch>) =>
     navigate({ search: (prev) => ({ ...prev, ...next }) });
@@ -109,32 +109,6 @@ function Shop() {
             </ul>
           </div>
 
-          {category && (
-            <div>
-              <h2 className="font-display text-sm font-bold uppercase tracking-wide">Subcategories</h2>
-              <ul className="mt-3 space-y-1 text-sm">
-                <li>
-                  <button
-                    onClick={() => setSearch({ sub: undefined })}
-                    className={!search.sub ? "font-semibold text-primary" : "text-muted-foreground hover:text-primary"}
-                  >
-                    All
-                  </button>
-                </li>
-                {category.subcategories.map((s) => (
-                  <li key={s.name}>
-                    <button
-                      onClick={() => setSearch({ sub: s.name })}
-                      className={search.sub === s.name ? "text-left font-semibold text-primary" : "text-left text-muted-foreground hover:text-primary"}
-                    >
-                      {s.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           <div className="rounded-md border border-border bg-primary-soft p-4">
             <p className="font-display text-sm font-bold">Need bulk pricing?</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -149,8 +123,10 @@ function Shop() {
         <section>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
             <p className="text-sm text-muted-foreground">
-              {results.length} product{results.length === 1 ? "" : "s"}
-              {results.length > 0 && (
+              {productsError
+                ? "Unable to load product count"
+                : `${results.length} product${results.length === 1 ? "" : "s"}`}
+              {!productsError && results.length > 0 && (
                 <> · from {formatGHS(Math.min(...results.map((r) => r.price)))}</>
               )}
             </p>

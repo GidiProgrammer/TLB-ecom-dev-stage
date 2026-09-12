@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueries } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
-import { formatGHS, productImage } from "@/lib/catalog-utils";
+import { formatGHS } from "@/lib/catalog-utils";
 import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
 import { useStore, type LineItem } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -43,25 +43,35 @@ function CartLine({
     );
   }
 
-  if (error || !product) return null;
+  if (error || !product) {
+    return (
+      <div className="flex items-center justify-between gap-4 p-4">
+        <p className="text-sm text-muted-foreground">This product is no longer available.</p>
+        <Button variant="ghost" size="sm" onClick={() => removeFromCart(line.id)}>
+          Remove
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-4 p-4">
       <img
-        src={productImage(product.category)}
+        src={product.image}
         alt={product.name}
         className="h-20 w-20 shrink-0 rounded object-cover"
       />
       <div className="min-w-0 flex-1">
         <Link
           to="/product/$id"
-          params={{ id: product.id }}
+          params={{ id: product.slug }}
           className="font-display text-sm font-bold hover:text-primary"
         >
           {product.name}
         </Link>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {product.brand} · {formatGHS(product.price)} / {product.unit}
+          {formatGHS(product.price)}
+          {product.unit ? ` / ${product.unit}` : ""}
         </p>
         <div className="mt-3 flex items-center gap-3">
           <Input

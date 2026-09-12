@@ -183,20 +183,9 @@ export function Header() {
                     >
                       {c.name}
                     </Link>
-                    <ul className="mt-2 space-y-1">
-                      {c.subcategories.slice(0, 5).map((s) => (
-                        <li key={s.name}>
-                          <Link
-                            to="/shop"
-                            search={{ category: c.slug, sub: s.name }}
-                            onClick={() => setMegaOpen(false)}
-                            className="text-xs text-muted-foreground hover:text-primary"
-                          >
-                            {s.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                    {c.description ? (
+                      <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">{c.description}</p>
+                    ) : null}
                   </div>
                 ))}
               </div>

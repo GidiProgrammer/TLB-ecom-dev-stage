@@ -25,7 +25,7 @@ export function Footer() {
         <div>
           <h3 className="font-display text-sm font-bold uppercase tracking-wide">Categories</h3>
           <ul className="mt-4 space-y-2 text-sm text-primary-foreground/75">
-            {(categories ?? []).slice(0, 6).map((c) => (
+            {(categories ?? []).map((c) => (
               <li key={c.slug}>
                 <Link to="/shop" search={{ category: c.slug }} className="hover:text-primary-foreground">
                   {c.name}

@@ -34,10 +34,16 @@ function readStorage(): { cart: LineItem[]; quote: LineItem[] } {
   }
 }
 
+function normalizeAddQty(qty: number): number {
+  if (!Number.isFinite(qty)) return 1;
+  return Math.max(1, Math.floor(qty));
+}
+
 function upsert(list: LineItem[], id: string, qty: number): LineItem[] {
+  const amount = normalizeAddQty(qty);
   const found = list.find((l) => l.id === id);
-  if (!found) return [...list, { id, qty }];
-  return list.map((l) => (l.id === id ? { ...l, qty: l.qty + qty } : l));
+  if (!found) return [...list, { id, qty: amount }];
+  return list.map((l) => (l.id === id ? { ...l, qty: l.qty + amount } : l));
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -67,11 +73,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addToCart,
       addToQuote,
       setCartQty: (id, qty) =>
-        setCart((c) => (qty <= 0 ? c.filter((l) => l.id !== id) : c.map((l) => (l.id === id ? { ...l, qty } : l)))),
+        setCart((c) => {
+          if (!Number.isFinite(qty) || qty <= 0) return c.filter((l) => l.id !== id);
+          return c.map((l) => (l.id === id ? { ...l, qty: Math.floor(qty) } : l));
+        }),
       removeFromCart: (id) => setCart((c) => c.filter((l) => l.id !== id)),
       clearCart: () => setCart([]),
       setQuoteQty: (id, qty) =>
-        setQuote((q) => (qty <= 0 ? q.filter((l) => l.id !== id) : q.map((l) => (l.id === id ? { ...l, qty } : l)))),
+        setQuote((q) => {
+          if (!Number.isFinite(qty) || qty <= 0) return q.filter((l) => l.id !== id);
+          return q.map((l) => (l.id === id ? { ...l, qty: Math.floor(qty) } : l));
+        }),
       removeFromQuote: (id) => setQuote((q) => q.filter((l) => l.id !== id)),
       clearQuote: () => setQuote([]),
       cartCount: cart.reduce((n, l) => n + l.qty, 0),

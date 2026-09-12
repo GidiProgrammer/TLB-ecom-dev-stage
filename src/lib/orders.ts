@@ -23,6 +23,16 @@ const orderInputSchema = z.object({
     .min(1),
 });
 
+function mapOrderError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("unauthorized")) return "Unauthorized: user does not match the signed-in account";
+  if (lower.includes("no items")) return "Your cart is empty";
+  if (lower.includes("not found") || lower.includes("not available")) return "A product in your cart is not available";
+  if (lower.includes("insufficient stock")) return "Insufficient stock for one or more products";
+  if (lower.includes("invalid quantity") || lower.includes("quantity")) return "Invalid quantity";
+  return message;
+}
+
 export const createOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => orderInputSchema.parse(data))
@@ -37,24 +47,31 @@ export const createOrder = createServerFn({ method: "POST" })
       ? `${data.shipping.address} — ${data.shipping.notes}`
       : data.shipping.address;
 
-    const { data: orderId, error } = await supabaseAdmin.rpc("create_order_with_items" as never, {
+    const { data: orderId, error } = await supabaseAdmin.rpc("create_order_with_items", {
       p_user_id: data.userId,
-      p_institution: data.institution,
+      p_institution: data.institution ?? "",
       p_shipping_name: data.shipping.name,
       p_shipping_email: data.shipping.email,
       p_shipping_phone: data.shipping.phone,
       p_shipping_address: shippingAddress,
       p_shipping_city: data.shipping.city,
       p_items: data.items,
-    } as never);
+    });
 
     if (error) {
-      throw new Error(error.message);
+      console.error("[createOrder]", error.message);
+      throw new Error(mapOrderError(error.message));
     }
 
     if (!orderId) {
       throw new Error("Order was not created");
     }
 
-    return { orderId: String(orderId) };
+    const { data: order } = await supabaseAdmin
+      .from("orders")
+      .select("reference")
+      .eq("id", String(orderId))
+      .maybeSingle();
+
+    return { orderId: String(orderId), reference: order?.reference ?? String(orderId) };
   });

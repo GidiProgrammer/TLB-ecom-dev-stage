@@ -1,11 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { FileText, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-import { formatGHS, productImage, stockLabel } from "@/lib/catalog-utils";
+import { formatGHS, stockLabel } from "@/lib/catalog-utils";
 import type { CatalogProduct } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const { addToCart, addToQuote } = useStore();
@@ -18,20 +17,19 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         className="relative block aspect-4/3 overflow-hidden bg-secondary"
       >
         <img
-          src={productImage(product.category)}
+          src={product.image}
           alt={product.name}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        {product.bestSeller && (
-          <Badge className="absolute left-2 top-2 bg-accent text-accent-foreground">Best seller</Badge>
-        )}
       </Link>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {product.brand} · {product.subcategory}
-        </p>
+        {product.categoryName ? (
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {product.categoryName}
+          </p>
+        ) : null}
         <h3 className="mt-1 line-clamp-2 font-display text-sm font-bold leading-snug">
           <Link to="/product/$id" params={{ id: product.id }} className="hover:text-primary">
             {product.name}
@@ -43,7 +41,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
 
         <div className="mt-3 flex items-baseline gap-1">
           <span className="font-display text-lg font-extrabold text-primary">{formatGHS(product.price)}</span>
-          <span className="text-xs text-muted-foreground">/ {product.unit}</span>
+          {product.unit ? <span className="text-xs text-muted-foreground">/ {product.unit}</span> : null}
         </div>
 
         <div className="mt-4 flex gap-2">
