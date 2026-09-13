@@ -35,7 +35,9 @@ Customer-facing e-commerce site for TLB Enterprise (laboratory/scientific suppli
 
 ## Environment variables
 
-See `.env.example`. Client-side (Vite-bundled, public): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Server-only (never expose): `SUPABASE_SERVICE_ROLE_KEY`, `CONTACT_RECIPIENT_EMAIL`.
+See `.env.example` and [`VERCEL_DEPLOYMENT.md`](./VERCEL_DEPLOYMENT.md). Client-side (Vite-bundled, public): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Server-only (never expose): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `MAIL_DRIVER`, `CONTACT_RECIPIENT_EMAIL`.
+
+Production is intended to be **GitHub → Vercel** (TanStack Start + Nitro `vercel` preset), independently of Lovable. Do not commit `.env.production` or Vercel secrets. The former Cloudflare Worker path is historical; see [`CLOUDFLARE_DEPLOYMENT.md`](./CLOUDFLARE_DEPLOYMENT.md).
 
 ## Migrations
 

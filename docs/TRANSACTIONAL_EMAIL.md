@@ -170,7 +170,7 @@ There is **no scheduled worker or cron**. Rows stay in the outbox until somethin
 ### What the repository and Lovable project prove
 
 - The app is **TanStack Start** (`tech_stack: tanstack_start_ts_current`), connected to Lovable project `e19d5b65-2ade-41fe-b3c2-0e8f5c6fe839`. Preview: `*.lovable.app`. `is_published` was **false** at audit time (preview only; no documented production publish URL in-repo).
-- Production **build target is Cloudflare Workers via Nitro** (`vite.config.ts` comment; generated `.output/server/wrangler.json` with `nodejs_compat`, worker name `gidiprogrammer-tlb-ecom-dev-stage`). There is **no `vercel.json`**, no GitHub Actions, no committed `wrangler.toml`, and generated wrangler config has **no `triggers.crons`**. `src/server.ts` implements `fetch` only — no `scheduled` handler.
+- Production **build target is Vercel via Nitro** (`vite.config.ts`: `preset: "vercel"`; Vercel Build Output API under `.vercel/output`). There is **no `vercel.json`**, no GitHub Actions, no committed `wrangler.toml`. `src/server.ts` implements `fetch` only — no `scheduled` handler and no Vercel Cron. See `docs/VERCEL_DEPLOYMENT.md`. The former Cloudflare Worker path is historical (`docs/CLOUDFLARE_DEPLOYMENT.md`).
 - Data: linked Supabase `mothgrmclaowhsiemiuj` (`supabase/config.toml`). Lovable Cloud database is enabled (`stack: supabase`). There is **no `supabase/functions/`** directory.
 - Server work today is **request-scoped**: `createServerFn` handlers and SSR. CSRF in `src/start.ts` applies to **server functions**, not a hypothetical HTTP cron.
 - `src/integrations/supabase/cron-auth.ts` is **auto-generated** and **unused**. It requires server-only `LOVABLE_CRON_SECRET` (optional rotation via `LOVABLE_CRON_SECRET_PREVIOUS`), `Authorization: Bearer …`, SHA-256 + `timingSafeEqual`. Missing secret → 500. Bad/missing token → 401. Suitable for a future HTTP worker; it is not a scheduler. Those vars are listed in `.env.example` (no `VITE_`). They are **not** set in local `.env` at audit time.
@@ -179,7 +179,7 @@ There is **no scheduled worker or cron**. Rows stay in the outbox until somethin
 
 - That Lovable will call any app URL on a timer with `LOVABLE_CRON_SECRET`.
 - That Lovable Cloud **Jobs** (Cloud tab; create via Lovable chat/SQL) run inside this Worker or call `processTransactionalEmailOutbox`. Official Jobs docs describe the **built-in Cloud backend**, not this Nitro worker.
-- That adding a Cloudflare cron to wrangler would be honored by Lovable hosting.
+- That adding Vercel Cron or a Cloudflare Worker `scheduled` handler would be present in this repo (they are not).
 - A live production hostname that an external scheduler could hit.
 
 Lovable docs also mention **Inngest** as an optional connector (not present in this repo) and third-party HTTP cron as an unofficial pattern. Neither is configured here.
@@ -197,7 +197,7 @@ Do not run an unbounded loop. One bounded pass:
 Preferred invocation, in order, once **proven** on the real host:
 
 1. **Option B** — protected TanStack **server route** (not a `createServerFn`; CSRF would block external callers) invoked by a platform or external scheduler with Bearer `LOVABLE_CRON_SECRET`.
-2. **Option A** — Cloudflare Worker `scheduled` + wrangler crons, only if Lovable/Nitro deploy actually registers them.
+2. **Option A** — platform cron (Vercel Cron or similar) calling a protected HTTP route — **not configured**; do not add in the deployment-target switch.
 3. **Option E** — Supabase scheduled Edge Function, only if we accept a second runtime that must hold the same secrets and call the same processor (or HTTP to the app). Not present today.
 4. **Option D** — dedicated worker process: not in this hosting model.
 
@@ -205,8 +205,8 @@ Do **not** use customer session cookies. Do not take batch size or event IDs fro
 
 ### Must be configured before implementing a scheduler
 
-1. Confirm **where production is published** (Lovable publish vs Cloudflare vs other) and the **canonical HTTPS origin**.
-2. Confirm **who will HTTP-call or `scheduled`-invoke** the worker (Lovable Jobs vs Cloudflare cron vs external cron vs Inngest) with a real test that is not a guess.
+1. Confirm **where production is published** (Vercel Preview/Production URL) and the **canonical HTTPS origin**.
+2. Confirm **who will HTTP-call** a future protected processor route (Vercel Cron vs external cron vs Inngest) with a real test that is not a guess. Do not add a scheduler in the Vercel target switch.
 3. Set server-only `LOVABLE_CRON_SECRET` (and rotation secret if needed) in that host’s secret store — never `VITE_`.
 4. Keep `MAIL_DRIVER=capture` until a later provider checkpoint.
 

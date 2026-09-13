@@ -34,9 +34,12 @@ sb_secret*
 *.pem
 *.p12
 
-# Wrangler / Cloudflare
+# Wrangler / Cloudflare (historical local artifacts)
 .wrangler/
 .dev.vars
+
+# Vercel Build Output API (Nitro vercel preset)
+.vercel/
 
 # Playwright
 /test-results/
