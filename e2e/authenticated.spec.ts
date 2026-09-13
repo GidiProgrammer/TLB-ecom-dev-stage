@@ -28,13 +28,13 @@ test.describe("authenticated account", () => {
     const ordersPanel = page.getByRole("tabpanel", { name: "Orders" });
     await expect(page.getByRole("tab", { name: "Orders" })).toBeVisible();
     await expect(
-      ordersPanel.getByText(/^TLB-/).or(ordersPanel.getByText("No orders yet")),
+      ordersPanel.getByText(/^TLB-/).or(ordersPanel.getByText("No orders yet")).first(),
     ).toBeVisible();
 
     await page.getByRole("tab", { name: "Quote requests" }).click();
     const quotesPanel = page.getByRole("tabpanel", { name: "Quote requests" });
     await expect(
-      quotesPanel.getByText(/^QT-/).or(quotesPanel.getByText("No quote requests yet")),
+      quotesPanel.getByText(/^QT-/).or(quotesPanel.getByText("No quote requests yet")).first(),
     ).toBeVisible();
 
     await page.goto("/admin");

@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const quoteInputSchema = z.object({
   userId: z.string().uuid(),
+  submissionNonce: z.string().uuid(),
   institution: z.string().trim().max(200).nullable(),
   contact: z.object({
     name: z.string().trim().min(1).max(200),
@@ -50,6 +51,7 @@ export const createQuote = createServerFn({ method: "POST" })
       p_contact_phone: data.contact.phone,
       p_notes: data.notes ?? "",
       p_items: data.items,
+      p_submission_nonce: data.submissionNonce,
     });
 
     if (error) {
@@ -65,9 +67,13 @@ export const createQuote = createServerFn({ method: "POST" })
     const quoteId = String(payload.quote_id);
     const { data: quote } = await supabaseAdmin
       .from("quotes")
-      .select("id, reference, contact_email")
+      .select("id, reference, contact_email, user_id")
       .eq("id", quoteId)
       .maybeSingle();
+
+    if (quote?.user_id && quote.user_id !== context.userId) {
+      throw new Error("Unauthorized");
+    }
 
     const created = {
       quoteId,

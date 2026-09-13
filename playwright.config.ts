@@ -22,7 +22,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      testIgnore: /auth\.setup\.ts|authenticated\.spec\.ts|mcp-.*\.(js|ts)$/,
+      testIgnore: /auth\.setup\.ts|authenticated\.spec\.ts|commerce-submit\.spec\.ts|mcp-.*\.(js|ts)$/,
       use: { ...devices["Desktop Chrome"] },
     },
     ...(hasE2E
@@ -38,8 +38,21 @@ export default defineConfig({
             },
           },
           {
-            name: "authenticated",
+            name: "commerce",
+            fullyParallel: false,
+            workers: 1,
             dependencies: ["setup"],
+            testMatch: /commerce-submit\.spec\.ts/,
+            use: {
+              ...devices["Desktop Chrome"],
+              storageState: authState,
+            },
+          },
+          {
+            name: "authenticated",
+            fullyParallel: false,
+            workers: 1,
+            dependencies: ["commerce"],
             testMatch: /authenticated\.spec\.ts/,
             use: {
               ...devices["Desktop Chrome"],

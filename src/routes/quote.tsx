@@ -8,6 +8,7 @@ import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
 import { useStore, type LineItem } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { createQuote } from "@/lib/quotes";
+import { clearSubmissionNonce, getOrCreateSubmissionNonce } from "@/lib/commerce-nonce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,6 +95,8 @@ function QuotePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [confirmedQuote, setConfirmedQuote] = useState<string | null>(null);
   const lineQueries = useQueries({
     queries: quote.map((line) => ({
       queryKey: ["product", line.id],
@@ -115,6 +118,22 @@ function QuotePage() {
   const linesLoading = lineQueries.some((q) => q.isLoading);
   const linesMissing = quote.some((_, i) => !lineQueries[i]?.data);
 
+  if (confirmedQuote) {
+    return (
+      <div className="container-page py-24 text-center">
+        <h1 className="font-display text-2xl font-extrabold">Quote request received</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Keep this reference: {confirmedQuote}. We will return institutional pricing separately. This
+          is not an invoice and no payment was taken. Retrying the same submit returns this request; it
+          does not create another one.
+        </p>
+        <Button asChild className="mt-6">
+          <Link to="/account">View your quote requests</Link>
+        </Button>
+      </div>
+    );
+  }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (quote.length === 0) {
@@ -127,6 +146,8 @@ function QuotePage() {
       return;
     }
     setBusy(true);
+    setSubmitError(null);
+    const submissionNonce = getOrCreateSubmissionNonce("quote");
     try {
       const quoteItems = quote.flatMap((l, i) => {
         const p = lineQueries[i]?.data;
@@ -139,6 +160,7 @@ function QuotePage() {
       const { reference } = await createQuote({
         data: {
           userId: user.id,
+          submissionNonce,
           institution: form.institution.trim() ? form.institution.trim() : null,
           contact: {
             name: form.name,
@@ -150,13 +172,15 @@ function QuotePage() {
         },
       });
 
+      clearSubmissionNonce("quote");
       clearQuote();
+      setConfirmedQuote(reference);
       toast.success(`Quote request ${reference} submitted`, {
         description: "We typically respond within one working day.",
       });
-      navigate({ to: "/account" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Quote creation failed";
+      setSubmitError(message);
       toast.error("Could not submit request", { description: message });
     } finally {
       setBusy(false);
@@ -203,6 +227,16 @@ function QuotePage() {
         </div>
 
         <form onSubmit={submit} className="h-fit space-y-4 rounded-md border border-border bg-card p-5">
+          {submitError ? (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              <p className="font-semibold">Your quote request was not submitted</p>
+              <p className="mt-1">{submitError}</p>
+              <p className="mt-1 text-destructive/80">Your list and form details have been kept. You can correct the issue and try again.</p>
+            </div>
+          ) : null}
           <h2 className="font-display text-base font-bold">Your details</h2>
           <div>
             <Label htmlFor="q-name">Contact name</Label>

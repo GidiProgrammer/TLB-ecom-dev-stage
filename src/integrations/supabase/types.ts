@@ -1635,6 +1635,36 @@ export type Database = {
           },
         ]
       }
+      commerce_submissions: {
+        Row: {
+          created_at: string
+          id: string
+          nonce: string
+          operation: string
+          order_id: string | null
+          quote_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nonce: string
+          operation: string
+          order_id?: string | null
+          quote_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nonce?: string
+          operation?: string
+          order_id?: string | null
+          quote_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactional_email_outbox: {
         Row: {
           attempt_count: number
@@ -1836,6 +1866,7 @@ export type Database = {
           p_shipping_email: string
           p_shipping_name: string
           p_shipping_phone: string
+          p_submission_nonce: string
           p_user_id: string
         }
         Returns: string
@@ -1848,6 +1879,7 @@ export type Database = {
           p_institution: string
           p_items: Json
           p_notes: string
+          p_submission_nonce: string
           p_user_id: string
         }
         Returns: Json

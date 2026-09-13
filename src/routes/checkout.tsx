@@ -7,6 +7,7 @@ import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
 import { useStore, type LineItem } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { createOrder } from "@/lib/orders";
+import { clearSubmissionNonce, getOrCreateSubmissionNonce } from "@/lib/commerce-nonce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,6 +96,7 @@ function Checkout() {
     }
     setBusy(true);
     setSubmitError(null);
+    const submissionNonce = getOrCreateSubmissionNonce("order");
     try {
       const orderItems = cart.flatMap((l, i) => {
         const p = lineQueries[i]?.data;
@@ -107,6 +109,7 @@ function Checkout() {
       const { orderId, reference } = await createOrder({
         data: {
           userId: user.id,
+          submissionNonce,
           institution: form.institution.trim() ? form.institution.trim() : null,
           shipping: {
             name: form.name,
@@ -120,6 +123,7 @@ function Checkout() {
         },
       });
 
+      clearSubmissionNonce("order");
       clearCart();
       setConfirmedOrderId(reference || orderId);
       toast.success("Order received", { description: "Our team will confirm pricing and delivery." });
@@ -137,7 +141,9 @@ function Checkout() {
       <div className="container-page py-24 text-center">
         <h1 className="font-display text-2xl font-extrabold">Order confirmed</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your order has been placed and is pending confirmation. Reference: {confirmedOrderId}
+          Your order has been recorded. Keep this reference: {confirmedOrderId}. No payment was taken
+          online — we will confirm availability, delivery cost and invoicing separately. Retrying the
+          same submit returns this order; it does not place another one.
         </p>
         <Button asChild className="mt-6">
           <Link to="/account">View your orders</Link>

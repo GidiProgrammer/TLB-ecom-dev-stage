@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const orderInputSchema = z.object({
   userId: z.string().uuid(),
+  submissionNonce: z.string().uuid(),
   institution: z.string().trim().max(200).nullable(),
   shipping: z.object({
     name: z.string().trim().min(1).max(200),
@@ -56,6 +57,7 @@ export const createOrder = createServerFn({ method: "POST" })
       p_shipping_address: shippingAddress,
       p_shipping_city: data.shipping.city,
       p_items: data.items,
+      p_submission_nonce: data.submissionNonce,
     });
 
     if (error) {
@@ -70,9 +72,13 @@ export const createOrder = createServerFn({ method: "POST" })
     const id = String(orderId);
     const { data: order } = await supabaseAdmin
       .from("orders")
-      .select("id, reference, shipping_email")
+      .select("id, reference, shipping_email, user_id")
       .eq("id", id)
       .maybeSingle();
+
+    if (order?.user_id && order.user_id !== context.userId) {
+      throw new Error("Unauthorized: user does not match the signed-in account");
+    }
 
     const result = { orderId: id, reference: order?.reference ?? id };
 

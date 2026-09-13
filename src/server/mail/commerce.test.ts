@@ -152,11 +152,13 @@ describe("client / security contract", () => {
 
     assert.match(orders, /requireSupabaseAuth/);
     assert.match(orders, /create_order_with_items/);
+    assert.match(orders, /p_submission_nonce: data\.submissionNonce/);
     assert.match(orders, /enqueueOrderCreatedFromRecord/);
     assert.match(orders, /notifyAfterCommerceCommit/);
     assert.match(orders, /shippingEmail: order\?\.shipping_email/);
     assert.match(quotes, /requireSupabaseAuth/);
     assert.match(quotes, /create_quote_with_items/);
+    assert.match(quotes, /p_submission_nonce: data\.submissionNonce/);
     assert.match(quotes, /enqueueQuoteCreatedFromRecord/);
     assert.match(quotes, /contactEmail: quote\?\.contact_email/);
   });
