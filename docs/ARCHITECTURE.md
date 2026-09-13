@@ -31,9 +31,11 @@ Customer-facing e-commerce site for TLB Enterprise (laboratory/scientific suppli
 
 **`profiles.approval_status` is protected by a trigger** (`prevent_self_approval`), not just RLS — a user's own-profile `UPDATE` policy would otherwise let them silently approve their own institutional account by including `approval_status: 'approved'` in an unrelated profile edit.
 
+**Customer transactional email** uses `transactional_email_outbox`, not warehouse `notifications`. See `docs/TRANSACTIONAL_EMAIL.md`. Mail code lives under `src/server/mail/` (never import from routes). After commerce RPCs commit, `order.created` / `quote.created` are enqueued. Staff status *transitions* enqueue quote quoted/declined and order shipped/cancelled/payment_failed. Admin-only `approval_status` transitions enqueue profile approved/rejected (account notice only; not CP22 rights). Public contact uses `submitContact` → `contact.submitted` to `CONTACT_RECIPIENT_EMAIL` (customer address is reply-to only). A server-only processor can claim rows. Phase 5 audit: nothing currently invokes it in production (see `docs/TRANSACTIONAL_EMAIL.md`).
+
 ## Environment variables
 
-See `.env.example`. Client-side (Vite-bundled, public): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Server-only (never expose): `SUPABASE_SERVICE_ROLE_KEY`.
+See `.env.example`. Client-side (Vite-bundled, public): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Server-only (never expose): `SUPABASE_SERVICE_ROLE_KEY`, `CONTACT_RECIPIENT_EMAIL`.
 
 ## Migrations
 

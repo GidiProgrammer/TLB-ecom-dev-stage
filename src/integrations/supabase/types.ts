@@ -1635,6 +1635,60 @@ export type Database = {
           },
         ]
       }
+      transactional_email_outbox: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          delivery_status: Database["public"]["Enums"]["transactional_email_status"]
+          entity_id: string
+          entity_type: string
+          event_key: string
+          event_type: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          payload: Json
+          recipient_email: string
+          sent_at: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          delivery_status?: Database["public"]["Enums"]["transactional_email_status"]
+          entity_id: string
+          entity_type: string
+          event_key: string
+          event_type: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          recipient_email: string
+          sent_at?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          delivery_status?: Database["public"]["Enums"]["transactional_email_status"]
+          entity_id?: string
+          entity_type?: string
+          event_key?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          recipient_email?: string
+          sent_at?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1749,6 +1803,30 @@ export type Database = {
       }
     }
     Functions: {
+      claim_transactional_email_outbox: {
+        Args: {
+          p_limit?: number
+          p_max_attempts?: number
+          p_stale_after?: unknown
+        }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          delivery_status: Database["public"]["Enums"]["transactional_email_status"]
+          entity_id: string
+          entity_type: string
+          event_key: string
+          event_type: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          payload: Json
+          recipient_email: string
+          sent_at: string | null
+          template_id: string
+          updated_at: string
+        }[]
+      }
       create_order_with_items: {
         Args: {
           p_institution: string
@@ -1809,6 +1887,7 @@ export type Database = {
         | "accepted"
         | "declined"
       stock_reason: "restock" | "sale" | "adjustment" | "damaged" | "return"
+      transactional_email_status: "pending" | "sending" | "sent" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1950,6 +2029,7 @@ export const Constants = {
       ],
       quote_status: ["submitted", "reviewed", "quoted", "accepted", "declined"],
       stock_reason: ["restock", "sale", "adjustment", "damaged", "return"],
+      transactional_email_status: ["pending", "sending", "sent", "failed"],
     },
   },
 } as const

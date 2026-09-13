@@ -62,5 +62,27 @@ export const createQuote = createServerFn({ method: "POST" })
       throw new Error("Quote creation failed");
     }
 
-    return { quoteId: String(payload.quote_id), reference: String(payload.reference) };
+    const quoteId = String(payload.quote_id);
+    const { data: quote } = await supabaseAdmin
+      .from("quotes")
+      .select("id, reference, contact_email")
+      .eq("id", quoteId)
+      .maybeSingle();
+
+    const created = {
+      quoteId,
+      reference: quote?.reference ?? String(payload.reference),
+    };
+
+    const { enqueueQuoteCreatedFromRecord, notifyAfterCommerceCommit } = await import(
+      "@/server/mail/commerce"
+    );
+
+    return notifyAfterCommerceCommit(created, () =>
+      enqueueQuoteCreatedFromRecord({
+        id: quoteId,
+        reference: created.reference,
+        contactEmail: quote?.contact_email ?? null,
+      }),
+    );
   });

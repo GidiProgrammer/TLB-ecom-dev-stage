@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Mail, MapPin, Phone, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { COMPANY } from "@/lib/catalog-utils";
+import { submitContact } from "@/lib/contact";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,8 +25,44 @@ export const Route = createFileRoute("/contact")({
   component: Contact,
 });
 
+const emptyForm = {
+  name: "",
+  email: "",
+  phone: "",
+  institution: "",
+  message: "",
+  website: "",
+};
+
 function Contact() {
-  const [sent, setSent] = useState(false);
+  const errorId = useId();
+  const [form, setForm] = useState(emptyForm);
+  const [busy, setBusy] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = (key: keyof typeof emptyForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((current) => ({ ...current, [key]: e.target.value }));
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      await submitContact({ data: form });
+      setAccepted(true);
+      setForm(emptyForm);
+      toast.success("Enquiry received", {
+        description: "We will follow up. This does not mean an email has been delivered yet.",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not submit your message. Please try again or call us.";
+      setError(message);
+      toast.error("Could not submit your message", { description: message });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="container-page py-10">
@@ -35,47 +72,111 @@ function Contact() {
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_20rem]">
-        <form
-          className="space-y-5 rounded-md border border-border p-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSent(true);
-            toast.success("Message ready to send", {
-              description: `Our team will reply from ${COMPANY.email}.`,
-            });
-          }}
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="c-name">Your name</Label>
-              <Input id="c-name" required className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="c-email">Email</Label>
-              <Input id="c-email" type="email" required className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="c-phone">Phone</Label>
-              <Input id="c-phone" className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="c-org">Institution / company</Label>
-              <Input id="c-org" className="mt-1.5" />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="c-msg">How can we help?</Label>
-            <Textarea id="c-msg" rows={6} required className="mt-1.5" />
-          </div>
-          <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">
-            Send message
-          </Button>
-          {sent && (
-            <p className="text-xs text-muted-foreground">
-              Thank you — for urgent requests please call {COMPANY.phone}.
+        {accepted ? (
+          <div className="space-y-4 rounded-md border border-border p-6" role="status" aria-live="polite">
+            <p className="text-sm">
+              Thank you. Your enquiry was accepted. A member of the team will follow up. For urgent requests
+              please call {COMPANY.phone}.
             </p>
-          )}
-        </form>
+            <Button type="button" variant="outline" onClick={() => setAccepted(false)}>
+              Send another message
+            </Button>
+          </div>
+        ) : (
+          <form className="space-y-5 rounded-md border border-border p-6" onSubmit={onSubmit} noValidate>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="c-name">Your name</Label>
+                <Input
+                  id="c-name"
+                  name="name"
+                  autoComplete="name"
+                  required
+                  maxLength={200}
+                  className="mt-1.5"
+                  value={form.name}
+                  onChange={set("name")}
+                />
+              </div>
+              <div>
+                <Label htmlFor="c-email">Email</Label>
+                <Input
+                  id="c-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  maxLength={200}
+                  className="mt-1.5"
+                  value={form.email}
+                  onChange={set("email")}
+                />
+              </div>
+              <div>
+                <Label htmlFor="c-phone">Phone</Label>
+                <Input
+                  id="c-phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  maxLength={50}
+                  className="mt-1.5"
+                  value={form.phone}
+                  onChange={set("phone")}
+                />
+              </div>
+              <div>
+                <Label htmlFor="c-org">Institution / company</Label>
+                <Input
+                  id="c-org"
+                  name="institution"
+                  autoComplete="organization"
+                  maxLength={200}
+                  className="mt-1.5"
+                  value={form.institution}
+                  onChange={set("institution")}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="c-msg">How can we help?</Label>
+              <Textarea
+                id="c-msg"
+                name="message"
+                rows={6}
+                required
+                maxLength={2000}
+                className="mt-1.5"
+                value={form.message}
+                onChange={set("message")}
+              />
+            </div>
+            <div className="sr-only" aria-hidden="true">
+              <label htmlFor="c-website">Website</label>
+              <input
+                id="c-website"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.website}
+                onChange={set("website")}
+              />
+            </div>
+            {error ? (
+              <p id={errorId} className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <Button
+              type="submit"
+              disabled={busy}
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+              aria-describedby={error ? errorId : undefined}
+            >
+              {busy ? "Sending…" : "Send message"}
+            </Button>
+          </form>
+        )}
 
         <aside className="h-fit space-y-4 rounded-md border border-border bg-primary-soft p-6 text-sm">
           <div className="flex gap-3">

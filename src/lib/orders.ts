@@ -67,11 +67,24 @@ export const createOrder = createServerFn({ method: "POST" })
       throw new Error("Order was not created");
     }
 
+    const id = String(orderId);
     const { data: order } = await supabaseAdmin
       .from("orders")
-      .select("reference")
-      .eq("id", String(orderId))
+      .select("id, reference, shipping_email")
+      .eq("id", id)
       .maybeSingle();
 
-    return { orderId: String(orderId), reference: order?.reference ?? String(orderId) };
+    const result = { orderId: id, reference: order?.reference ?? id };
+
+    const { enqueueOrderCreatedFromRecord, notifyAfterCommerceCommit } = await import(
+      "@/server/mail/commerce"
+    );
+
+    return notifyAfterCommerceCommit(result, () =>
+      enqueueOrderCreatedFromRecord({
+        id,
+        reference: result.reference,
+        shippingEmail: order?.shipping_email ?? null,
+      }),
+    );
   });
