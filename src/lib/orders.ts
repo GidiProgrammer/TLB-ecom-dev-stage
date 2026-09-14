@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { mapOrderError } from "@/lib/order-errors";
 
 const orderInputSchema = z.object({
   userId: z.string().uuid(),
@@ -23,16 +24,6 @@ const orderInputSchema = z.object({
     )
     .min(1),
 });
-
-function mapOrderError(message: string): string {
-  const lower = message.toLowerCase();
-  if (lower.includes("unauthorized")) return "Unauthorized: user does not match the signed-in account";
-  if (lower.includes("no items")) return "Your cart is empty";
-  if (lower.includes("not found") || lower.includes("not available")) return "A product in your cart is not available";
-  if (lower.includes("insufficient stock")) return "Insufficient stock for one or more products";
-  if (lower.includes("invalid quantity") || lower.includes("quantity")) return "Invalid quantity";
-  return message;
-}
 
 export const createOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

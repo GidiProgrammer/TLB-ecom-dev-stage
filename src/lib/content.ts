@@ -36,7 +36,7 @@ export const articles: Article[] = [
       "A 0.1 mg balance on an unstable bench performs worse than a 1 mg balance installed correctly. Before comparing models, look at where the instrument will live: a solid, vibration-free bench away from doors, air conditioning vents and direct sunlight.",
       "Internal calibration is worth the premium for laboratories that weigh across the day, because it corrects for temperature drift automatically. External calibration is acceptable when weighing sessions are short and a certified mass set is available.",
       "Consider throughput too. Balances with fast stabilisation times and side-opening draft shields cut minutes off every batch, which matters in teaching laboratories where dozens of students share one instrument.",
-      "Whatever you buy, budget for annual servicing and a traceable calibration certificate. We supply both nationwide, including for instruments not purchased from us.",
+      "Ask the supplier about annual servicing and a traceable calibration certificate. TLB can help you source both for instruments in our catalogue.",
     ],
   },
   {
@@ -81,7 +81,7 @@ export const articles: Article[] = [
       "A certificate of analysis records the actual measured values for a specific production batch — assay, impurities, water content — rather than the generic specification printed on the label.",
       "For accredited laboratories this is not optional. ISO/IEC 17025 assessors will ask how you verify the quality of critical consumables, and a batch CoA filed against the delivery note is the simplest possible answer.",
       "Even outside accreditation, the CoA is your first diagnostic when results drift. If the reagent is within spec, you can stop suspecting it and look at the method or the instrument.",
-      "Every analytical grade product we supply ships with its batch certificate, and we keep copies on file so replacements can be traced years later.",
+      "Ask us for a batch certificate of analysis on analytical-grade items when you order. Keep a copy with your delivery notes so replacements can be traced later.",
     ],
   },
   {
@@ -96,55 +96,9 @@ export const articles: Article[] = [
       "Large one-off purchases create two problems: cash flow pressure and storage pressure. Both are avoidable with a call-off arrangement, where the total quantity and price are agreed once and released in scheduled instalments.",
       "This works particularly well for teaching laboratories with term-based demand, and for facilities where reagent shelf life is shorter than the procurement cycle.",
       "Ask for a written quotation that lists unit price, pack size, lead time and validity period. That document is what makes internal approval straightforward.",
-      "Our quote system is built for exactly this — add the items you need, submit the request, and we respond with institutional pricing and a delivery schedule.",
+      "Our quote request form is built for this — add the items you need, submit the request, and we respond with pricing and a proposed delivery plan where we can.",
     ],
   },
 ];
 
 export const articleBySlug = (slug: string) => articles.find((a) => a.slug === slug);
-
-export const brands = [
-  { name: "LabChem", focus: "Analytical reagents & solvents" },
-  { name: "BoroLab", focus: "Borosilicate 3.3 glassware" },
-  { name: "PrecisionLab", focus: "Balances & weighing systems" },
-  { name: "SpinTech", focus: "Centrifuges & separation" },
-  { name: "ThermoLine", focus: "Ovens, incubators & furnaces" },
-  { name: "OptiView", focus: "Microscopy & optics" },
-  { name: "SpectraOne", focus: "Spectroscopy instruments" },
-  { name: "AquaMeter", focus: "Water & electrochemistry" },
-  { name: "SafeGrip", focus: "Personal protective equipment" },
-  { name: "BenchPro", focus: "Laboratory consumables" },
-  { name: "LabFit GH", focus: "Laboratory furniture & fit-out" },
-  { name: "AquaPure", focus: "Water treatment chemicals" },
-];
-
-export const testimonials = [
-  {
-    name: "Dr. Ama Ofori",
-    role: "Head of Chemistry, Technical University",
-    rating: 5,
-    quote:
-      "TLB Enterprise has supplied our teaching laboratory for four academic years. Orders arrive complete, certificates are always attached, and their team helps us plan around the semester calendar.",
-  },
-  {
-    name: "Kwabena Mensah",
-    role: "QC Manager, Beverage Manufacturer",
-    rating: 5,
-    quote:
-      "We moved our reagent supply to TLB after repeated stock-outs elsewhere. Lead times are predictable and the pricing on bulk solvents is genuinely competitive.",
-  },
-  {
-    name: "Sister Efua Danso",
-    role: "Laboratory Coordinator, District Hospital",
-    rating: 4,
-    quote:
-      "Their PPE and consumables pricing made a real difference to our budget, and they delivered to Koforidua within two days of the purchase order.",
-  },
-  {
-    name: "Ing. Yaw Boateng",
-    role: "Process Engineer, Mining Services",
-    rating: 5,
-    quote:
-      "Bulk assay reagents delivered on schedule with correct documentation every time. The technical support on instrument selection was an unexpected bonus.",
-  },
-];

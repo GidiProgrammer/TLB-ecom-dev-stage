@@ -341,7 +341,12 @@ function QuoteRow({ quote }: { quote: AdminQuote }) {
       </div>
       <ul className="mt-3 space-y-2">
         {quote.quote_items.map((item) => (
-          <QuoteItemPriceRow key={item.id} item={item} quoteReference={quote.reference} />
+          <QuoteItemPriceRow
+            key={item.id}
+            item={item}
+            quoteReference={quote.reference}
+            quoteStatus={quote.status}
+          />
         ))}
       </ul>
     </div>
@@ -351,13 +356,16 @@ function QuoteRow({ quote }: { quote: AdminQuote }) {
 function QuoteItemPriceRow({
   item,
   quoteReference,
+  quoteStatus,
 }: {
   item: AdminQuote["quote_items"][number];
   quoteReference: string;
+  quoteStatus: AdminQuote["status"];
 }) {
   const queryClient = useQueryClient();
   const [value, setValue] = useState(item.quoted_price == null ? "" : String(item.quoted_price));
   const [busy, setBusy] = useState(false);
+  const closed = isTerminalQuoteStatus(quoteStatus);
 
   const save = async () => {
     const parsed = Number(value);
@@ -390,9 +398,10 @@ function QuoteItemPriceRow({
         aria-label={`Quoted price for ${item.product_name}`}
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        disabled={closed || busy}
         className="h-8 w-28"
       />
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => void save()}>
+      <Button size="sm" variant="outline" disabled={closed || busy} onClick={() => void save()}>
         Save price
       </Button>
     </li>

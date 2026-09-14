@@ -218,3 +218,65 @@ Store only what the template needs (order/quote reference, item names, quoted un
 ## Drivers
 
 `sendTransactionalEmail` lives under `src/server/`. `MAIL_DRIVER=capture` records attempts and never sends. `MAIL_DRIVER=resend` delivers through Resend. Templates are rendered server-side (`html` + `text`) with HTML escaping of untrusted strings. Never put provider secrets on `VITE_*`.
+
+## Production operations runbook (e-commerce transactional email)
+
+This is the customer commerce mail pipeline only. Warehouse `notifications` is out of scope.
+
+### What each outbox status means
+
+| Status | Meaning |
+| --- | --- |
+| `pending` | Queued or waiting for backoff. Eligible when `next_attempt_at` is due and attempts &lt; 5. |
+| `sending` | Claimed by the processor. Fresh claims are not re-taken. |
+| `sent` | Adapter returned success. `sent_at` set. |
+| `failed` | Permanent: 5 attempts exhausted, or a non-retryable provider error. Not auto-retried. |
+
+Stale `sending` (no update for **10 minutes**) is reclaimable if attempts remain; otherwise it is marked `failed`.
+
+Retries update the **same** row. Max attempts: **5**. Backoff from 60s, doubling, capped at 15 minutes.
+
+### Verify cron is running
+
+1. Production Vercel: Cron Jobs should list `GET /api/cron/transactional-email` at `*/5 * * * *`.
+2. Vercel Cron only runs on **Production**, not Preview.
+3. `CRON_SECRET` must be set. Missing secret → HTTP 500 and **nothing processed**.
+4. Successful run JSON is counts only: `claimed`, `sent`, `retryScheduled`, `permanentlyFailed`.
+
+Preview/staging must keep `MAIL_DRIVER=capture` and must not hold a Resend API key.
+
+### Inspect failed or stuck rows
+
+In the Supabase SQL editor (service role / dashboard), query `transactional_email_outbox`:
+
+- `delivery_status = 'failed'` — read `last_error`, `attempt_count`, `event_key`, `event_type`.
+- `delivery_status = 'sending'` and `updated_at` older than 10 minutes — stale claim; the next cron should recover or fail the row.
+- `delivery_status = 'pending'` with `next_attempt_at` in the future — waiting for backoff.
+
+Do not paste recipient addresses into tickets or chat logs. Use `id` / `event_key`.
+
+### What to check in Resend
+
+- Domain verified; `MAIL_FROM` matches that domain.
+- API key is Production-only (`MAIL_PROVIDER_API_KEY`, never `VITE_`).
+- Look up by `Idempotency-Key` (the outbox `event_key`) whether a message was accepted.
+- 429/5xx are retried by the processor; most other 4xx fail the row permanently.
+
+### Customer received an order/quote but no email
+
+The commerce RPC already committed. **Do not** ask the customer to submit checkout or quote again (that can create a second order/quote).
+
+1. Confirm the entity exists (order/quote reference in admin).
+2. Look up outbox by `event_key` (`order.created:{order_id}`, `quote.created:{quote_id}`, etc.).
+3. If no row: enqueue failed after commit. Insert is **not** done from the dashboard in this checkpoint — contact engineering to enqueue the same `event_key` (unique constraint prevents duplicates).
+4. If `failed`: fix provider/config, then set that row back to `pending` with `attempt_count` below 5 and `next_attempt_at = now()` **or** wait for a one-off processor run after a manual status reset. Never create a new commerce row.
+5. If `sent` in outbox but the inbox is empty: check Resend logs, spam, and the recipient on the order/quote (`shipping_email` / `contact_email`).
+
+### Provider unavailable
+
+Rows stay `pending`/`sending` and retry with backoff until max attempts, then `failed`. Commerce is unchanged. Keep Preview on capture so a mis-set driver cannot mail real customers.
+
+### Safely retry a failed email
+
+Retry the **outbox row**, not the shop form. Unique `event_key` is the idempotency guard. Resend also receives that key as `Idempotency-Key`. Delivery is still at-least-once if the worker dies after the provider accepts the message but before `sent` is written.
+

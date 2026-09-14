@@ -256,7 +256,7 @@ function ProductDetail() {
         <TabsContent value="delivery" className="mt-4 max-w-2xl space-y-2 text-sm text-muted-foreground">
           {[
             "Delivery across Ghana is arranged after an order is confirmed.",
-            "Regional delivery can be arranged with courier or our own transport.",
+            "Regional delivery can be arranged with a courier once we have confirmed the order.",
             "Ask us for a batch certificate of analysis on analytical-grade items.",
             "Purchase orders and invoicing are accepted — payment is arranged offline.",
           ].map((t) => (

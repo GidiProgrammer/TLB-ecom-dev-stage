@@ -34,7 +34,9 @@ Copy `.env.example` to `.env` and fill in values from your Supabase project (Set
 
 ## Database
 
-Schema lives in `supabase/migrations/`. Apply migrations to a Supabase project via the SQL Editor or `supabase db push`. See `ARCHITECTURE.md` for the data model and the reasoning behind the RLS/role design before making schema changes.
+Schema history lives in `supabase/migrations/`. That directory mixes legacy Lovable files, numbered core schema, and later forward-only hardening. **Do not** assume `supabase db push` of the whole folder is safe.
+
+On the live project, apply only the forward-only files that are not yet present (see `ARCHITECTURE.md`). Do not rewrite historical migrations. See `ARCHITECTURE.md` for the data model and RLS/role design before changing schema.
 
 ## Scripts
 

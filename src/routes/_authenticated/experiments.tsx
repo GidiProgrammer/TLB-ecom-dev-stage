@@ -111,7 +111,7 @@ function Experiments() {
       toast.success("Experiment created");
       invalidate();
     },
-    onError: (e: Error) => toast.error("Could not create experiment", { description: e.message }),
+    onError: () => toast.error("Could not create experiment", { description: "Please try again." }),
   });
 
   const saveItems = useMutation({
@@ -123,7 +123,7 @@ function Experiments() {
       if (error) throw error;
     },
     onSuccess: invalidate,
-    onError: (e: Error) => toast.error("Could not update experiment", { description: e.message }),
+    onError: () => toast.error("Could not update experiment", { description: "Please try again." }),
   });
 
   const remove = useMutation({
@@ -135,6 +135,7 @@ function Experiments() {
       toast.success("Experiment deleted");
       invalidate();
     },
+    onError: () => toast.error("Could not delete experiment", { description: "Please try again." }),
   });
 
   return (

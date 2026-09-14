@@ -66,7 +66,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-border bg-background">
       <div className="bg-primary-dark text-primary-foreground">
         <div className="container-page flex h-9 items-center justify-between text-xs">
-          <p className="hidden sm:block">Laboratory & scientific supplies delivered nationwide in Ghana</p>
+          <p className="hidden sm:block">Laboratory and scientific supplies from Accra, with delivery arranged after we confirm your order</p>
           <div className="flex items-center gap-4">
             <a href={`tel:${COMPANY.phone.replace(/\s/g, "")}`} className="inline-flex items-center gap-1.5">
               <Phone className="h-3.5 w-3.5" /> {COMPANY.phone}
@@ -168,7 +168,7 @@ export function Header() {
             </Link>
           </Button>
           <Button asChild variant="ghost" size="sm" className="gap-1.5">
-            <Link to={user ? "/account" : "/auth"}>
+            <Link to={user ? "/account" : "/auth"} activeOptions={{ exact: true }}>
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">{user ? "Account" : "Sign in"}</span>
             </Link>

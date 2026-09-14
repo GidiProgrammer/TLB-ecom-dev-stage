@@ -41,7 +41,7 @@ export function Footer() {
             <li><Link to="/about" className="hover:text-primary-foreground">About us</Link></li>
             <li><Link to="/blog" className="hover:text-primary-foreground">Knowledge hub</Link></li>
             <li><Link to="/quote" className="hover:text-primary-foreground">Request a quote</Link></li>
-            <li><Link to="/account" className="hover:text-primary-foreground">Account dashboard</Link></li>
+            <li><Link to="/account" activeOptions={{ exact: true }} className="hover:text-primary-foreground">Account dashboard</Link></li>
             <li><Link to="/contact" className="hover:text-primary-foreground">Contact</Link></li>
           </ul>
         </div>

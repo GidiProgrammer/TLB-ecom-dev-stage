@@ -100,7 +100,10 @@ export async function updateAccountProfile(userId: string, fields: AccountProfil
     .eq("id", userId)
     .select(PROFILE_COLUMNS)
     .maybeSingle();
-  if (error) throw new Error(error.message || "Could not save your profile");
+  if (error) {
+    console.error("[updateAccountProfile]", error.message);
+    throw new Error("Could not save your profile");
+  }
   if (!data) throw new Error("Could not save your profile");
   return data;
 }

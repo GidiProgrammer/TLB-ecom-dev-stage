@@ -22,7 +22,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Buy analytical chemicals, laboratory equipment, glassware, PPE and consumables in Accra. Request a quotation and arrange delivery nationwide.",
+          "Buy analytical chemicals, laboratory equipment, glassware, PPE and consumables in Accra. Request a quotation and arrange delivery after we confirm your order.",
       },
       { property: "og:title", content: "TLB Enterprise — Laboratory & Scientific Supplies in Ghana" },
       {
@@ -37,9 +37,9 @@ export const Route = createFileRoute("/")({
 
 const promises = [
   { icon: BadgeCheck, title: "Documented quality", text: "Ask us for batch certificates of analysis on analytical-grade items." },
-  { icon: Truck, title: "Nationwide delivery", text: "We arrange Accra and regional delivery across Ghana after an order is confirmed." },
+  { icon: Truck, title: "Delivery arranged", text: "Accra and regional delivery can be arranged after we confirm your order." },
   { icon: FileText, title: "Quotations", text: "Request a quote for tenders, purchase orders and bulk supply." },
-  { icon: Headphones, title: "Technical support", text: "Guidance on instrument selection, installation and servicing." },
+  { icon: Headphones, title: "Technical questions", text: "Ask us about product selection and the documentation you need for your lab." },
 ];
 
 function Home() {
@@ -53,7 +53,7 @@ function Home() {
         <div className="container-page relative grid items-center gap-10 py-16 lg:grid-cols-2 lg:py-24">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
-              <FlaskConical className="h-3.5 w-3.5" /> Serving laboratories since 2014
+              <FlaskConical className="h-3.5 w-3.5" /> Laboratory supplies from Accra
             </p>
             <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] sm:text-5xl lg:text-6xl">
               Laboratory supplies you can build a result on

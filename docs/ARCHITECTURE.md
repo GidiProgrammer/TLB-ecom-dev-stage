@@ -23,11 +23,13 @@ Customer-facing e-commerce site for TLB Enterprise (laboratory/scientific suppli
 
 ## Key design decisions (the "why")
 
-**RLS policies are split into "own row" vs "admin/staff" policies, never a single blanket policy.** A regular user can `SELECT`/`INSERT` their own orders/quotes, but cannot `UPDATE` an order's `status` or `total` directly — those columns are only mutable via server-side code using the service-role key, or by an admin/staff RLS policy. This was a deliberate fix for a real gap found in the original Lovable-generated schema, where `FOR ALL` policies let a user edit fields (like their own order's payment status) that only staff should control.
+**RLS policies are split into "own row" vs "admin/staff" policies, never a single blanket policy.** A regular user can `SELECT` their own orders/quotes. They cannot `INSERT`/`UPDATE`/`DELETE` those rows from the browser — commerce writes go through service-role RPCs (`create_order_with_items`, `create_quote_with_items`, `accept_quote`, `cancel_order_and_restore_stock`). Staff mutations use TanStack Start server functions and `supabaseAdmin`. This was a deliberate fix for Lovable-era `FOR ALL` policies that let a user edit fields (like their own order's payment status) that only staff should control. Forward-only migration `20260914140000_tlb_client_commerce_write_lock.sql` drops those leftover policies and restates SELECT-only grants.
 
 **Orders are created through one atomic Postgres function (`create_order_with_items`), not multiple client-side inserts.** The Supabase JS client cannot wrap several `.insert()`/`.rpc()` calls into a single transaction — each commits independently. A crash between "create order" and "decrement stock" would leave inconsistent data. `create_order_with_items` does everything (order row, order_items rows, stock decrement, stock_movements log) inside one transaction with row-level locking (`FOR UPDATE`), so concurrent checkouts can't oversell the same item. It is `SECURITY DEFINER` and execution is `REVOKE`d from `anon`/`authenticated` — **only** callable via the service-role key from server-side code.
 
 **Order creation goes through a TanStack Start server function (`src/lib/orders.ts`), not a direct client-side Supabase call.** The service-role key must never reach the browser bundle. TanStack Start's Vite plugin enforces this at build time — client code cannot import anything under `**/server/**`; server functions must be declared with `createServerFn` (see that file for the pattern) so the framework can split client/server code correctly. If you hit an "Import denied" error, this is why — don't work around it by moving the import path, fix the function to use `createServerFn`.
+
+**`/auth` stays `ssr: false`.** Enabling SSR for that route made the password-recovery UI fail to appear on first click (E2E) and did not remove the Header/Footer `data-status` hydration warning. Protected routes still use `getUser()` in `beforeLoad`; this mismatch is cosmetic. Do not swap that check for `getSession()`.
 
 **`profiles.approval_status` is protected by a trigger** (`prevent_self_approval`), not just RLS — a user's own-profile `UPDATE` policy would otherwise let them silently approve their own institutional account by including `approval_status: 'approved'` in an unrelated profile edit.
 
@@ -41,4 +43,16 @@ Production is intended to be **GitHub → Vercel** (TanStack Start + Nitro `verc
 
 ## Migrations
 
-SQL migrations live in `supabase/migrations/` (Lovable's originals) and were superseded/extended by files applied manually to the production Supabase project (schema + seed + order function — tracked outside this repo for now; consider moving these into `supabase/migrations/` properly as the project matures, so schema history lives in version control like everything else).
+SQL lives in `supabase/migrations/`. That folder is **not** a safe one-shot replay against an empty or live database.
+
+Three layers exist:
+
+1. **Legacy Lovable files** (`20260826*`) — original CREATE TABLE / `FOR ALL` policies. They conflict with later numbered schema if applied together.
+2. **Numbered core files** (`001`–`004`) — catalogue/orders/quotes schema, seed, and early order RPC. Applied historically to the live project.
+3. **Forward-only hardening** (`20260910*` onward) — RLS/GRANT locks, secure RPCs, idempotency, cancel/restock, quote accept, outbox, client write lock. These assume the live database already has the core e-commerce tables.
+
+**Do not** run a blind `supabase db push` of the whole directory. **Do not** rewrite historical migration files.
+
+For an existing production/live Supabase project: apply any **new** `20260914*` (and later) forward-only files deliberately in the SQL editor or via a targeted CLI push of those files only, after confirming they are not already applied.
+
+A greenfield database cannot currently be constructed by replaying this folder from scratch. Treat the live project as the source of schema truth and keep new changes forward-only in git.

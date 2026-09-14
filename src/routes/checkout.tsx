@@ -149,9 +149,9 @@ function Checkout() {
       <div className="container-page py-24 text-center">
         <h1 className="font-display text-2xl font-extrabold">Order confirmed</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Your order has been recorded. Keep this reference: {confirmedOrderId}. No payment was taken
-          online — we will confirm availability, delivery cost and invoicing separately. If your order
-          submission needs to be retried, you can safely submit again.
+          Your order was submitted successfully. Keep this reference: {confirmedOrderId}. You can
+          also find it in your account. No payment was taken online — we will confirm availability,
+          delivery cost and invoicing separately.
         </p>
         <Button asChild className="mt-6">
           <Link to="/account">View your orders</Link>

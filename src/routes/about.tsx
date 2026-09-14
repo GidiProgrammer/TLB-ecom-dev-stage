@@ -21,10 +21,10 @@ export const Route = createFileRoute("/about")({
 });
 
 const values = [
-  { icon: BadgeCheck, title: "Verified quality", text: "We source from established manufacturers and supply batch documentation as standard." },
-  { icon: Users, title: "Technical partnership", text: "Our team advises on instrument selection, method consumables and laboratory design." },
-  { icon: Target, title: "Reliable supply", text: "Planned stockholding and call-off contracts keep laboratories running through the year." },
-  { icon: Building2, title: "Institutional experience", text: "Familiar with tender documentation, purchase orders and public procurement timelines." },
+  { icon: BadgeCheck, title: "Documented quality", text: "We can supply batch certificates of analysis for analytical-grade products when you ask at order time." },
+  { icon: Users, title: "Practical advice", text: "Talk to us about product selection, pack sizes and the consumables your method needs." },
+  { icon: Target, title: "Confirmed supply", text: "Availability, delivery and invoicing are arranged after we receive your order or quotation request." },
+  { icon: Building2, title: "Institutional purchasing", text: "We work with quotations, purchase orders and offline invoicing for organisations." },
 ];
 
 function About() {
@@ -37,7 +37,7 @@ function About() {
             <p className="mt-4 text-primary-foreground/85">
               We are a Ghanaian laboratory supply company based in Accra, serving teaching and research
               laboratories, hospitals, mining and manufacturing quality control units, and water treatment
-              operators nationwide.
+              operators.
             </p>
           </div>
           <img src={heroLab} alt="Laboratory bench with instruments" className="rounded-lg shadow-pop" />
@@ -51,14 +51,13 @@ function About() {
             <p>
               TLB Enterprise supplies analytical and industrial chemicals, benchtop and floor-standing
               equipment, borosilicate glassware, personal protective equipment, general consumables and
-              laboratory furniture. We also provide fit-out support, instrument installation and routine
-              servicing.
+              laboratory furniture. Ask us what we can source for your specification.
             </p>
             <p>
               Our customers include public universities and technical universities, teaching and district
               hospitals, food and beverage manufacturers, mining service laboratories, and municipal water
-              operators. Most work with us on a recurring basis through quotations and scheduled call-off
-              supply, which keeps pricing predictable across a budget year.
+              operators. Recurring work is typically arranged through quotations and scheduled deliveries
+              agreed with our team.
             </p>
             <p>
               We can supply batch certificates of analysis for analytical-grade products. Ask our team when

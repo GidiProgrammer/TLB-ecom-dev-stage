@@ -5,6 +5,7 @@ import { Constants } from "@/integrations/supabase/types";
 import {
   assertValidOrderTransition,
   assertValidQuoteTransition,
+  isTerminalQuoteStatus,
 } from "@/lib/commerce-status";
 import { loadStaffAccess } from "@/lib/staff";
 
@@ -243,6 +244,37 @@ export const updateQuoteItemPrice = createServerFn({ method: "POST" })
     const quotedPrice = parseQuotedPrice(data.quotedPrice);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const { data: existing, error: loadError } = await supabaseAdmin
+      .from("quote_items")
+      .select("id, quote_id, quoted_price")
+      .eq("id", data.quoteItemId)
+      .maybeSingle();
+
+    if (loadError) {
+      console.error("[updateQuoteItemPrice]", loadError.message);
+      throw new Error("Could not update quoted price");
+    }
+    if (!existing) {
+      throw new Error("Quote item not found");
+    }
+
+    const { data: quote, error: quoteError } = await supabaseAdmin
+      .from("quotes")
+      .select("id, status")
+      .eq("id", existing.quote_id)
+      .maybeSingle();
+
+    if (quoteError) {
+      console.error("[updateQuoteItemPrice]", quoteError.message);
+      throw new Error("Could not update quoted price");
+    }
+    if (!quote) {
+      throw new Error("Quote not found");
+    }
+    if (isTerminalQuoteStatus(quote.status)) {
+      throw new Error("Quoted prices cannot be changed after this quotation is closed");
+    }
+
     const { data: row, error } = await supabaseAdmin
       .from("quote_items")
       .update({ quoted_price: quotedPrice })
@@ -252,6 +284,10 @@ export const updateQuoteItemPrice = createServerFn({ method: "POST" })
 
     if (error) {
       console.error("[updateQuoteItemPrice]", error.message);
+      const lower = error.message.toLowerCase();
+      if (lower.includes("cannot be changed") || lower.includes("closed")) {
+        throw new Error("Quoted prices cannot be changed after this quotation is closed");
+      }
       throw new Error("Could not update quoted price");
     }
     if (!row) {
