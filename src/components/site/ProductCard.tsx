@@ -1,21 +1,21 @@
 import { Link } from "@tanstack/react-router";
 import { FileText, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
-import { formatGHS, remainingPurchasableQty, stockLabel, stockStatus } from "@/lib/catalog-utils";
+import { formatGHS, remainingPurchasableQty, stockLabel, unavailableReason, purchaseUnavailableLabel, purchaseUnavailableMessage } from "@/lib/catalog-utils";
 import type { CatalogProduct } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 
 export function ProductCard({ product }: { product: CatalogProduct }) {
   const { addToCart, addToQuote, cart } = useStore();
-  const status = stockStatus(product.stock_quantity, product.low_stock_threshold);
   const inCart = cart.find((line) => line.id === product.id)?.qty ?? 0;
   const remaining = remainingPurchasableQty(product.stock_quantity, inCart);
+  const blocked = unavailableReason(product.stock_quantity, inCart);
   const canAdd = remaining > 0;
 
   const handleAddToCart = () => {
     if (!canAdd) {
-      toast.error(status === "out-of-stock" ? "This product is out of stock" : "No more of this item can be added");
+      toast.error(blocked ? purchaseUnavailableMessage(blocked) : "This product is out of stock");
       return;
     }
     addToCart(product.id, 1);
@@ -73,7 +73,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
             </Button>
           ) : (
             <Button size="sm" className="flex-1" disabled>
-              {status === "out-of-stock" ? "Out of stock" : "None available"}
+              {blocked ? purchaseUnavailableLabel(blocked) : "Out of stock"}
             </Button>
           )}
           <Button

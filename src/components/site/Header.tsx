@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, Search, ShoppingCart, FileText, FlaskConical, User, Phone } from "lucide-react";
 import { COMPANY } from "@/lib/catalog-utils";
 import { useCategories } from "@/lib/queries/products";
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 function CountBadge({ count }: { count: number }) {
@@ -26,6 +26,14 @@ function CountBadge({ count }: { count: number }) {
   );
 }
 
+const publicNav = [
+  { to: "/shop", label: "All products" },
+  { to: "/quote", label: "Request a quote" },
+  { to: "/blog", label: "Knowledge hub" },
+  { to: "/about", label: "About us" },
+  { to: "/contact", label: "Contact" },
+] as const;
+
 export function Header() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
@@ -35,6 +43,18 @@ export function Header() {
   const { data: categories } = useCategories();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useRouterState({
+    select: (s) => ({ pathname: s.location.pathname, search: s.location.searchStr }),
+  });
+
+  useEffect(() => {
+    if (location.pathname !== "/shop") return;
+    const params = new URLSearchParams(
+      location.search.startsWith("?") ? location.search.slice(1) : location.search,
+    );
+    setQ(params.get("q") ?? "");
+    setCat(params.get("category") || "all");
+  }, [location.pathname, location.search]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,30 +85,32 @@ export function Header() {
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-80 overflow-y-auto p-6">
+          <SheetContent side="left" className="w-80 overflow-y-auto p-6" aria-describedby={undefined}>
+            <SheetTitle className="absolute h-px w-px overflow-hidden whitespace-nowrap p-0 [clip:rect(0,0,0,0)]">
+              Menu
+            </SheetTitle>
             <p className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
               Categories
             </p>
-            <nav className="mt-3 flex flex-col">
+            <nav className="mt-3 flex flex-col" aria-label="Product categories">
               {(categories ?? []).map((c) => (
                 <Link
                   key={c.slug}
                   to="/shop"
                   search={{ category: c.slug }}
                   onClick={() => setMobileOpen(false)}
-                  className="border-b border-border py-2.5 text-sm"
+                  className="min-h-11 border-b border-border py-2.5 text-sm"
                 >
                   {c.name}
                 </Link>
               ))}
             </nav>
-            <nav className="mt-6 flex flex-col gap-2 text-sm">
-              <Link to="/shop" onClick={() => setMobileOpen(false)}>All products</Link>
-              <Link to="/quote" onClick={() => setMobileOpen(false)}>Request a quote</Link>
-              <Link to="/experiments" onClick={() => setMobileOpen(false)}>My experiments</Link>
-              <Link to="/blog" onClick={() => setMobileOpen(false)}>Knowledge hub</Link>
-              <Link to="/about" onClick={() => setMobileOpen(false)}>About</Link>
-              <Link to="/contact" onClick={() => setMobileOpen(false)}>Contact</Link>
+            <nav className="mt-6 flex flex-col gap-2 text-sm" aria-label="Site">
+              {publicNav.map((l) => (
+                <Link key={l.to} to={l.to} onClick={() => setMobileOpen(false)} className="min-h-11 py-2">
+                  {l.label}
+                </Link>
+              ))}
             </nav>
           </SheetContent>
         </Sheet>
@@ -120,6 +142,7 @@ export function Header() {
             </SelectContent>
           </Select>
           <Input
+            type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search reagents, glassware, equipment…"
@@ -159,14 +182,26 @@ export function Header() {
             className="relative"
             onMouseEnter={() => setMegaOpen(true)}
             onMouseLeave={() => setMegaOpen(false)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setMegaOpen(false);
+            }}
           >
             <button
+              type="button"
+              aria-expanded={megaOpen}
+              aria-controls="category-menu"
               onClick={() => setMegaOpen((v) => !v)}
-              className="flex h-11 items-center gap-2 bg-primary px-4 font-semibold text-primary-foreground"
+              onFocus={() => setMegaOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setMegaOpen(false);
+              }}
+              className="flex h-11 items-center gap-2 bg-primary px-4 font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Menu className="h-4 w-4" /> Shop by category
             </button>
             <div
+              id="category-menu"
+              hidden={!megaOpen}
               className={cn(
                 "absolute left-0 top-11 z-50 w-[min(64rem,90vw)] rounded-b-md border border-border bg-popover p-6 shadow-pop",
                 megaOpen ? "block" : "hidden",
@@ -179,7 +214,7 @@ export function Header() {
                       to="/shop"
                       search={{ category: c.slug }}
                       onClick={() => setMegaOpen(false)}
-                      className="font-display text-sm font-bold text-foreground hover:text-primary"
+                      className="font-display text-sm font-bold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {c.name}
                     </Link>
@@ -193,18 +228,11 @@ export function Header() {
           </div>
 
           <nav className="hidden items-center gap-1 lg:flex">
-            {[
-              { to: "/shop", label: "All products" },
-              { to: "/quote", label: "Request a quote" },
-              { to: "/experiments", label: "My experiments" },
-              { to: "/blog", label: "Knowledge hub" },
-              { to: "/about", label: "About us" },
-              { to: "/contact", label: "Contact" },
-            ].map((l) => (
+            {publicNav.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
-                className="rounded px-3 py-1.5 font-medium text-secondary-foreground hover:bg-background"
+                className="rounded px-3 py-1.5 font-medium text-secondary-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 activeProps={{ className: "text-primary" }}
               >
                 {l.label}
@@ -216,6 +244,7 @@ export function Header() {
 
       <form onSubmit={submit} className="container-page flex items-center gap-2 py-2 md:hidden">
         <Input
+          type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search products…"

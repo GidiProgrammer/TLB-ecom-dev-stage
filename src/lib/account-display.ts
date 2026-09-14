@@ -41,6 +41,14 @@ export function orderStatusLabel(status: Enums<"order_status">) {
   }
 }
 
+/** Extra customer copy for uncommon statuses. Does not describe online checkout. */
+export function orderStatusExplanation(status: Enums<"order_status">) {
+  if (status === "payment_failed") {
+    return "This order needs attention. Please contact TLB.";
+  }
+  return null;
+}
+
 export function quoteStatusLabel(status: Enums<"quote_status">) {
   switch (status) {
     case "submitted":

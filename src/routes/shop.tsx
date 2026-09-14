@@ -16,6 +16,7 @@ type ShopSearch = {
   q?: string | undefined;
   category?: string | undefined;
   sort?: string | undefined;
+  inStock?: boolean | undefined;
 };
 
 export const Route = createFileRoute("/shop")({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/shop")({
     q: typeof search["q"] === "string" && search["q"] ? search["q"] : undefined,
     category: typeof search["category"] === "string" ? search["category"] : undefined,
     sort: typeof search["sort"] === "string" ? search["sort"] : undefined,
+    inStock: search["inStock"] === true || search["inStock"] === "true" ? true : undefined,
   }),
   head: () => ({
     meta: [
@@ -48,16 +50,30 @@ function Shop() {
   const activeCategory = search.category ?? "all";
   const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCategories();
   const category = activeCategory === "all" ? undefined : categories?.find((c) => c.slug === activeCategory);
+  const categoriesReady = !categoriesLoading && !categoriesError;
+  const invalidCategory = Boolean(
+    search.category &&
+      search.category !== "all" &&
+      categoriesReady &&
+      !(categories ?? []).some((c) => c.slug === search.category),
+  );
 
-  const { data: products, isLoading: productsLoading, error: productsError } = useProducts({
+  const {
+    data: products,
+    isLoading: productsLoading,
+    error: productsError,
+    refetch,
+  } = useProducts({
     search: search.q,
-    categorySlug: activeCategory === "all" ? undefined : activeCategory,
+    categorySlug: invalidCategory || activeCategory === "all" ? undefined : activeCategory,
     sort: search.sort,
+    inStock: Boolean(search.inStock),
+    enabled: !invalidCategory,
   });
   const results = products ?? [];
 
   const setSearch = (next: Partial<ShopSearch>) =>
-    navigate({ search: (prev) => ({ ...prev, ...next }) });
+    navigate({ to: "/shop", search: { ...search, ...next } });
 
   return (
     <div className="container-page py-10">
@@ -66,113 +82,162 @@ function Shop() {
         {category && <> / <span className="text-foreground">{category.name}</span></>}
       </nav>
 
-      <header className="mt-3">
-        <h1 className="font-display text-3xl font-extrabold">
-          {category ? category.name : search.q ? `Results for “${search.q}”` : "All products"}
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          {category ? category.description : "Our complete range of laboratory chemicals, instruments, glassware, safety equipment and consumables."}
-        </p>
-      </header>
-
-      <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_1fr]">
-        <aside className="space-y-6">
-          <div>
-            <h2 className="font-display text-sm font-bold uppercase tracking-wide">Categories</h2>
-            <ul className="mt-3 space-y-1 text-sm">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setSearch({ category: undefined })}
-                  className={activeCategory === "all" ? "font-semibold text-primary" : "text-muted-foreground hover:text-primary"}
-                >
-                  All categories
-                </button>
-              </li>
-              {categoriesLoading ? (
-                <li className="text-sm text-muted-foreground">Loading…</li>
-              ) : categoriesError ? (
-                <li className="text-sm text-muted-foreground">Could not load categories.</li>
-              ) : (categories ?? []).map((c) => (
-                <li key={c.slug}>
-                  <button
-                    type="button"
-                    onClick={() => setSearch({ category: c.slug })}
-                    className={activeCategory === c.slug ? "text-left font-semibold text-primary" : "text-left text-muted-foreground hover:text-primary"}
-                  >
-                    {c.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="rounded-md border border-border bg-primary-soft p-4">
-            <p className="font-display text-sm font-bold">Need bulk pricing?</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Add items to a quote request and we'll respond with institutional pricing.
-            </p>
-            <Button asChild size="sm" className="mt-3 w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              <Link to="/quote">Open quote request</Link>
+      {invalidCategory ? (
+        <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
+          <h1 className="font-display text-2xl font-extrabold">Category not found</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            That category is not in our catalogue. Browse all products or pick a listed category.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Button asChild>
+              <Link to="/shop">View all products</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/" hash="categories">
+                Browse categories
+              </Link>
             </Button>
           </div>
-        </aside>
-
-        <section>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-            <p className="text-sm text-muted-foreground">
-              {productsError
-                ? "Unable to load product count"
-                : `${results.length} product${results.length === 1 ? "" : "s"}`}
-              {!productsError && results.length > 0 && (
-                <> · from {formatGHS(Math.min(...results.map((r) => r.price)))}</>
-              )}
+        </div>
+      ) : (
+        <>
+          <header className="mt-3">
+            <h1 className="font-display text-3xl font-extrabold">
+              {category
+                ? category.name
+                : search.category && !categoriesReady
+                  ? "Shop"
+                  : search.q
+                    ? `Results for “${search.q}”`
+                    : "All products"}
+            </h1>
+            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+              {category
+                ? category.description
+                : "Our complete range of laboratory chemicals, instruments, glassware, safety equipment and consumables."}
             </p>
-            <Select
-              value={search.sort ?? "name"}
-              onValueChange={(v) => setSearch({ sort: v === "name" ? undefined : v })}
-            >
-              <SelectTrigger className="w-full sm:w-48" aria-label="Sort products">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Name A–Z</SelectItem>
-                <SelectItem value="price-asc">Price: low to high</SelectItem>
-                <SelectItem value="price-desc">Price: high to low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          </header>
 
-          {productsLoading ? (
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="aspect-4/3 w-full rounded-md" />
-              ))}
-            </div>
-          ) : productsError ? (
-            <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
-              <p className="font-display text-lg font-bold">Could not load products</p>
-              <p className="mt-2 text-sm text-muted-foreground">Please try again shortly.</p>
-            </div>
-          ) : results.length === 0 ? (
-            <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
-              <p className="font-display text-lg font-bold">No products matched</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Try a different search term, or request a quote and we will source it for you.
-              </p>
-              <Button asChild className="mt-4" variant="outline">
-                <Link to="/contact">Ask our team</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {results.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+          <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_1fr]">
+            <aside className="space-y-6">
+              <div>
+                <h2 className="font-display text-sm font-bold uppercase tracking-wide">Categories</h2>
+                <ul className="mt-3 space-y-1 text-sm">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => setSearch({ category: undefined })}
+                      className={activeCategory === "all" ? "font-semibold text-primary" : "text-muted-foreground hover:text-primary"}
+                    >
+                      All categories
+                    </button>
+                  </li>
+                  {categoriesLoading ? (
+                    <li className="text-sm text-muted-foreground">Loading…</li>
+                  ) : categoriesError ? (
+                    <li className="text-sm text-muted-foreground">Could not load categories.</li>
+                  ) : (categories ?? []).map((c) => (
+                    <li key={c.slug}>
+                      <button
+                        type="button"
+                        onClick={() => setSearch({ category: c.slug })}
+                        className={activeCategory === c.slug ? "text-left font-semibold text-primary" : "text-left text-muted-foreground hover:text-primary"}
+                      >
+                        {c.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+                <div>
+                  <h2 className="font-display text-sm font-bold uppercase tracking-wide">Availability</h2>
+                  <div className="mt-3 flex min-h-11 items-center gap-2 text-sm">
+                    <input
+                      id="filter-in-stock"
+                      type="checkbox"
+                      checked={Boolean(search.inStock)}
+                      onChange={(e) => setSearch({ inStock: e.target.checked ? true : undefined })}
+                    />
+                    <label htmlFor="filter-in-stock" className="cursor-pointer">
+                      In stock only
+                    </label>
+                  </div>
+                </div>
+
+              <div className="rounded-md border border-border bg-primary-soft p-4">
+                <p className="font-display text-sm font-bold">Need a quotation?</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Add items to a quote request and our team will review quantities and provide pricing.
+                </p>
+                <Button asChild size="sm" className="mt-3 w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Link to="/quote">Open quote request</Link>
+                </Button>
+              </div>
+            </aside>
+
+            <section>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+                <p className="text-sm text-muted-foreground">
+                  {productsError
+                    ? "Unable to load product count"
+                    : `${results.length} product${results.length === 1 ? "" : "s"}`}
+                  {!productsError && results.length > 0 && (
+                    <> · from {formatGHS(Math.min(...results.map((r) => r.price)))}</>
+                  )}
+                </p>
+                <Select
+                  value={search.sort ?? "name"}
+                  onValueChange={(v) => setSearch({ sort: v === "name" ? undefined : v })}
+                >
+                  <SelectTrigger className="w-full sm:w-48" aria-label="Sort products">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name A–Z</SelectItem>
+                    <SelectItem value="price-asc">Price: low to high</SelectItem>
+                    <SelectItem value="price-desc">Price: high to low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {productsLoading ? (
+                <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="aspect-4/3 w-full rounded-md" />
+                  ))}
+                </div>
+              ) : productsError ? (
+                <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
+                  <p className="font-display text-lg font-bold">Could not load products</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Please try again.</p>
+                  <Button type="button" className="mt-4" variant="outline" onClick={() => void refetch()}>
+                    Retry
+                  </Button>
+                </div>
+              ) : results.length === 0 ? (
+                <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
+                  <p className="font-display text-lg font-bold">No products matched</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {search.inStock
+                      ? "No in-stock products matched these filters. Clear the in-stock filter or try another category."
+                      : "Try a different search term, or request a quote and we will source it for you."}
+                  </p>
+                  <Button asChild className="mt-4" variant="outline">
+                    <Link to="/contact">Ask our team</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {results.map((p) => (
+                    <ProductCard key={p.id} product={p} />
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -5,13 +5,12 @@ import {
   FileText,
   FlaskConical,
   Headphones,
-  Star,
   Truck,
 } from "lucide-react";
 import heroLab from "@/assets/hero-lab.jpg";
 import { COMPANY } from "@/lib/catalog-utils";
-import { brands, testimonials, articles } from "@/lib/content";
-import { useBestSellers, useCategories } from "@/lib/queries/products";
+import { articles } from "@/lib/content";
+import { useNewestInCatalogue, useCategories } from "@/lib/queries/products";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,13 +22,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Buy analytical chemicals, laboratory equipment, glassware, PPE and consumables in Accra. Institutional quotes, certificates of analysis and nationwide delivery.",
+          "Buy analytical chemicals, laboratory equipment, glassware, PPE and consumables in Accra. Request a quotation and arrange delivery nationwide.",
       },
       { property: "og:title", content: "TLB Enterprise — Laboratory & Scientific Supplies in Ghana" },
       {
         property: "og:description",
         content:
-          "Analytical chemicals, equipment, glassware and PPE for laboratories across Ghana. Request institutional pricing today.",
+          "Analytical chemicals, equipment, glassware and PPE for laboratories across Ghana. Request a quotation today.",
       },
     ],
   }),
@@ -37,14 +36,14 @@ export const Route = createFileRoute("/")({
 });
 
 const promises = [
-  { icon: BadgeCheck, title: "Certified quality", text: "Batch certificates of analysis on every analytical grade product." },
-  { icon: Truck, title: "Nationwide delivery", text: "Accra same-week dispatch, regional delivery across Ghana." },
-  { icon: FileText, title: "Institutional quotes", text: "Formal quotations for tenders, purchase orders and call-off supply." },
+  { icon: BadgeCheck, title: "Documented quality", text: "Ask us for batch certificates of analysis on analytical-grade items." },
+  { icon: Truck, title: "Nationwide delivery", text: "We arrange Accra and regional delivery across Ghana after an order is confirmed." },
+  { icon: FileText, title: "Quotations", text: "Request a quote for tenders, purchase orders and bulk supply." },
   { icon: Headphones, title: "Technical support", text: "Guidance on instrument selection, installation and servicing." },
 ];
 
 function Home() {
-  const { data: featured, isLoading: featuredLoading, error: featuredError } = useBestSellers(8);
+  const { data: featured, isLoading: featuredLoading, error: featuredError } = useNewestInCatalogue(8);
   const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCategories();
 
   return (
@@ -79,14 +78,14 @@ function Home() {
                 <Link to="/quote">Request a quote</Link>
               </Button>
             </div>
-            <dl className="mt-10 grid max-w-md grid-cols-3 gap-6">
+            <dl className="mt-10 grid max-w-lg grid-cols-3 gap-6">
               {[
-                ["1,200+", "Product lines"],
-                ["180+", "Institutions served"],
-                ["48 hrs", "Typical Accra dispatch"],
+                ["Catalogue", "Chemicals, equipment and consumables"],
+                ["Institutions", "Universities, hospitals and industry"],
+                ["Ghana-wide", "Delivery arranged after confirmation"],
               ].map(([v, l]) => (
-                <div key={l}>
-                  <dt className="font-display text-2xl font-extrabold">{v}</dt>
+                <div key={v}>
+                  <dt className="font-display text-lg font-extrabold sm:text-2xl">{v}</dt>
                   <dd className="text-xs text-primary-foreground/75">{l}</dd>
                 </div>
               ))}
@@ -116,7 +115,7 @@ function Home() {
         </div>
       </section>
 
-      <section className="container-page py-16">
+      <section id="categories" className="container-page py-16">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Shop by category</h2>
@@ -167,7 +166,10 @@ function Home() {
       <section className="bg-secondary/50 py-16">
         <div className="container-page">
           <div className="flex items-end justify-between gap-4">
-            <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Best sellers</h2>
+            <div>
+              <h2 className="font-display text-2xl font-extrabold sm:text-3xl">New in catalogue</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Recently added laboratory supplies.</p>
+            </div>
             <Link to="/shop" className="text-sm font-semibold text-primary hover:underline">
               See more
             </Link>
@@ -180,7 +182,7 @@ function Home() {
               : featuredError
                 ? (
                   <p className="text-sm text-muted-foreground sm:col-span-2 lg:col-span-4">
-                    Could not load best sellers. Please try again shortly.
+                    Could not load new catalogue items. Please try again shortly.
                   </p>
                 )
                 : (featured ?? []).map((p) => (
@@ -195,13 +197,12 @@ function Home() {
           <div className="grid items-center gap-8 lg:grid-cols-[1.4fr_1fr]">
             <div>
               <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
-                Institutional accounts &amp; call-off supply
+                Supply for laboratories and institutions
               </h2>
               <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-                Universities, hospitals and manufacturers can open an institutional account for approved
-                pricing, formal quotations against purchase orders and scheduled deliveries through the
-                academic or production year. Save recurring reagent lists as “Experiments” and reorder in
-                one click.
+                Open an account to track orders and quotations. You can include your institution details,
+                request a quotation, and contact TLB to arrange invoicing or purchase orders. Recurring
+                lists can be saved as experiments from your account after you sign in.
               </p>
             </div>
             <div className="flex flex-wrap gap-3 lg:justify-end">
@@ -217,36 +218,18 @@ function Home() {
       </section>
 
       <section className="container-page pb-16">
-        <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Brands we supply</h2>
-        <div className="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {brands.map((b) => (
-            <div key={b.name} className="rounded-md border border-border bg-card px-4 py-3">
-              <p className="font-display text-sm font-bold">{b.name}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{b.focus}</p>
+        <h2 className="font-display text-2xl font-extrabold sm:text-3xl">How ordering works</h2>
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {[
+            ["1. Browse the catalogue", "Find chemicals, glassware, equipment and consumables with Ghana cedi list prices."],
+            ["2. Order or request a quote", "Place an order from your cart, or send a quote list for our team to price."],
+            ["3. We confirm offline", "Availability, delivery and invoicing are arranged with TLB after we receive your request."],
+          ].map(([title, text]) => (
+            <div key={title} className="rounded-md border border-border bg-card p-5">
+              <h3 className="font-display text-sm font-bold">{title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{text}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="bg-primary-dark py-16 text-primary-foreground">
-        <div className="container-page">
-          <h2 className="font-display text-2xl font-extrabold sm:text-3xl">What our clients say</h2>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {testimonials.map((t) => (
-              <figure key={t.name} className="rounded-md bg-primary-foreground/10 p-5">
-                <div className="flex gap-0.5 text-accent">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-current" />
-                  ))}
-                </div>
-                <blockquote className="mt-3 text-sm text-primary-foreground/85">“{t.quote}”</blockquote>
-                <figcaption className="mt-4 text-xs">
-                  <span className="font-semibold">{t.name}</span>
-                  <span className="block text-primary-foreground/65">{t.role}</span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
         </div>
       </section>
 

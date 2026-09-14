@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueries } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/catalog-utils";
 import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
@@ -8,22 +8,23 @@ import { useStore, type LineItem } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { createOrder } from "@/lib/orders";
 import { clearSubmissionNonce, getOrCreateSubmissionNonce } from "@/lib/commerce-nonce";
+import { clearFormDraft, readFormDraft, writeFormDraft } from "@/lib/form-draft";
+import { privatePageHead } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/checkout")({
-  head: () => ({
-    meta: [
-      { title: "Checkout — TLB Enterprise" },
-      { name: "description", content: "Confirm your laboratory supply order. Invoicing and purchase orders are arranged offline." },
-      { property: "og:title", content: "Checkout — TLB Enterprise" },
-      { property: "og:description", content: "Confirm delivery details for your laboratory supply order." },
-    ],
-  }),
+  head: () =>
+    privatePageHead(
+      "Checkout — TLB Enterprise",
+      "Confirm your laboratory supply order. Invoicing and purchase orders are arranged offline.",
+    ),
   component: Checkout,
 });
+
+const CHECKOUT_DRAFT = "checkout";
 
 function CheckoutLine({ line }: { line: LineItem }) {
   const { data: product, isLoading } = useProduct(line.id);
@@ -59,15 +60,21 @@ function Checkout() {
       enabled: Boolean(line.id),
     })),
   });
-  const [form, setForm] = useState({
-    name: "",
-    email: user?.email ?? "",
-    phone: "",
-    institution: "",
-    address: "",
-    city: "",
-    notes: "",
-  });
+  const [form, setForm] = useState(() =>
+    readFormDraft(CHECKOUT_DRAFT, {
+      name: "",
+      email: user?.email ?? "",
+      phone: "",
+      institution: "",
+      address: "",
+      city: "",
+      notes: "",
+    }),
+  );
+
+  useEffect(() => {
+    writeFormDraft(CHECKOUT_DRAFT, form);
+  }, [form]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -91,7 +98,7 @@ function Checkout() {
     e.preventDefault();
     if (!user) {
       toast.error("Please sign in to place an order");
-      navigate({ to: "/auth" });
+      navigate({ to: "/auth", search: { redirect: "/checkout" } });
       return;
     }
     setBusy(true);
@@ -124,6 +131,7 @@ function Checkout() {
       });
 
       clearSubmissionNonce("order");
+      clearFormDraft(CHECKOUT_DRAFT);
       clearCart();
       setConfirmedOrderId(reference || orderId);
       toast.success("Order received", { description: "Our team will confirm pricing and delivery." });
@@ -142,8 +150,8 @@ function Checkout() {
         <h1 className="font-display text-2xl font-extrabold">Order confirmed</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Your order has been recorded. Keep this reference: {confirmedOrderId}. No payment was taken
-          online — we will confirm availability, delivery cost and invoicing separately. Retrying the
-          same submit returns this order; it does not place another one.
+          online — we will confirm availability, delivery cost and invoicing separately. If your order
+          submission needs to be retried, you can safely submit again.
         </p>
         <Button asChild className="mt-6">
           <Link to="/account">View your orders</Link>
@@ -171,6 +179,17 @@ function Checkout() {
         No payment is taken online. Submit your order and we will confirm availability, delivery cost and
         invoicing terms.
       </p>
+      {!user ? (
+        <div className="mt-6 rounded-md border border-border bg-primary-soft px-4 py-3 text-sm">
+          <p className="font-semibold">Sign in to complete your order.</p>
+          <p className="mt-1 text-muted-foreground">Your cart and delivery details stay on this device until you return.</p>
+          <Button asChild size="sm" className="mt-3">
+            <Link to="/auth" search={{ redirect: "/checkout" }}>
+              Sign in
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <form onSubmit={submit} className="mt-8 grid gap-8 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-5 rounded-md border border-border p-6">
@@ -242,8 +261,8 @@ function Checkout() {
           </Button>
           {!user && (
             <p className="mt-3 text-xs text-muted-foreground">
-              You'll need to{" "}
-              <Link to="/auth" className="font-semibold text-primary hover:underline">
+              You&apos;ll need to{" "}
+              <Link to="/auth" search={{ redirect: "/checkout" }} className="font-semibold text-primary hover:underline">
                 sign in
               </Link>{" "}
               to submit an order.

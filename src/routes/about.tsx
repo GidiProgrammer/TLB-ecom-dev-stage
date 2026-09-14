@@ -61,15 +61,15 @@ function About() {
               supply, which keeps pricing predictable across a budget year.
             </p>
             <p>
-              Every analytical grade product ships with its batch certificate of analysis, and we retain
-              copies so items can be traced during audits or when troubleshooting a result years later.
+              We can supply batch certificates of analysis for analytical-grade products. Ask our team when
+              you order if you need documentation retained for audits.
             </p>
             <h2 className="pt-4 font-display text-2xl font-extrabold text-foreground">Account types</h2>
             <p>
-              Individual accounts are approved immediately and are suited to consultants, small
-              laboratories and private buyers. Institutional accounts are reviewed by our team before
-              approval, and unlock formal quotations, invoicing against purchase orders and negotiated
-              pricing tiers.
+              Individual accounts are ready to use after sign-up. Institutional accounts are reviewed by our
+              team so we can recognise your organisation. You can request quotations, provide institutional
+              details, and contact TLB to arrange invoicing — this does not unlock automatic negotiated
+              pricing.
             </p>
           </div>
 

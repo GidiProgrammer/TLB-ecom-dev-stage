@@ -17,8 +17,10 @@ test.describe("authenticated account", () => {
     await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Admin overview" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /admin/i })).toHaveCount(0);
-
-    await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "My experiments" })).toBeVisible();
+    await page.getByRole("link", { name: "My experiments" }).click();
+    await expect(page).toHaveURL(/\/experiments/);
+    await page.goto("/account");
     const name = page.getByLabel("Full name");
     await expect(name).toBeVisible();
     await expect(name).not.toHaveValue("");
@@ -64,6 +66,8 @@ test.describe("authenticated account", () => {
     await expect(page.getByRole("heading", { name: "Checkout" })).toHaveCount(0);
     const updated = quotesPanel.locator("article").filter({ hasText: reference });
     await expect(updated.getByText("Accepted", { exact: true })).toBeVisible();
+    await expect(updated.getByText(/does not create an order/i)).toBeVisible();
+    await expect(updated.getByRole("link", { name: "Contact TLB" })).toBeVisible();
     await expect(updated.getByRole("button", { name: "Accept quotation" })).toHaveCount(0);
   });
 
@@ -103,6 +107,16 @@ test.describe("authenticated account", () => {
       await page.getByRole("button", { name: "Save profile" }).click();
       await expect(page.getByText("Profile saved")).toBeVisible();
     }
+  });
+
+  test("safe redirect returns to checkout and quote; unsafe redirect stays internal", async ({ page }) => {
+    await page.goto("/auth?redirect=/checkout");
+    await expect(page).toHaveURL(/\/checkout/, { timeout: 15_000 });
+    await page.goto("/auth?redirect=/quote");
+    await expect(page).toHaveURL(/\/quote/, { timeout: 15_000 });
+    await page.goto("/auth?redirect=https://evil.example");
+    await expect(page).not.toHaveURL(/evil/);
+    await expect(page).toHaveURL(/\/account/, { timeout: 15_000 });
   });
 
   test("sign out prevents authenticated account access", async ({ page }) => {

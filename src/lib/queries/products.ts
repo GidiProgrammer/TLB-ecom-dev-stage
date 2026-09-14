@@ -110,6 +110,7 @@ async function fetchProducts(opts: {
   search?: string | undefined;
   categorySlug?: string | undefined;
   sort?: string | undefined;
+  inStock?: boolean | undefined;
 }): Promise<CatalogProduct[]> {
   const useInnerJoin = Boolean(opts.categorySlug && opts.categorySlug !== "all");
   let query = supabase
@@ -124,7 +125,11 @@ async function fetchProducts(opts: {
 
   const q = escapeIlike(opts.search ?? "");
   if (q) {
-    query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`);
+    query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,sku.ilike.%${q}%,slug.ilike.%${q}%`);
+  }
+
+  if (opts.inStock) {
+    query = query.gt("stock_quantity", 0);
   }
 
   if (opts.sort === "price-asc") query = query.order("price", { ascending: true });
@@ -137,7 +142,7 @@ async function fetchProducts(opts: {
   return (data ?? []).map(mapProduct);
 }
 
-async function fetchBestSellers(limit: number): Promise<CatalogProduct[]> {
+async function fetchNewestInCatalogue(limit: number): Promise<CatalogProduct[]> {
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
@@ -180,12 +185,15 @@ export function useProducts(opts: {
   search?: string | undefined;
   categorySlug?: string | undefined;
   sort?: string | undefined;
+  inStock?: boolean | undefined;
+  enabled?: boolean | undefined;
 } = {}) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["products", opts],
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ["products", opts.search, opts.categorySlug, opts.sort, opts.inStock],
     queryFn: () => fetchProducts(opts),
+    enabled: opts.enabled !== false,
   });
-  return { data, isLoading, error };
+  return { data, isLoading, error, refetch };
 }
 
 export function useProduct(slug: string) {
@@ -197,10 +205,10 @@ export function useProduct(slug: string) {
   return { data, isLoading, error };
 }
 
-export function useBestSellers(limit = 8) {
+export function useNewestInCatalogue(limit = 8) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["best-sellers", limit],
-    queryFn: () => fetchBestSellers(limit),
+    queryKey: ["newest-in-catalogue", limit],
+    queryFn: () => fetchNewestInCatalogue(limit),
   });
   return { data, isLoading, error };
 }

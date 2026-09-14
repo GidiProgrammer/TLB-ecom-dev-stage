@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueries } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/catalog-utils";
@@ -9,6 +9,8 @@ import { useStore, type LineItem } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { createQuote } from "@/lib/quotes";
 import { clearSubmissionNonce, getOrCreateSubmissionNonce } from "@/lib/commerce-nonce";
+import { clearFormDraft, readFormDraft, writeFormDraft } from "@/lib/form-draft";
+import { privatePageHead } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,20 +18,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/quote")({
-  head: () => ({
-    meta: [
-      { title: "Request a quote — TLB Enterprise" },
-      {
-        name: "description",
-        content:
-          "Build a list of laboratory products and request formal institutional pricing from TLB Enterprise in Accra.",
-      },
-      { property: "og:title", content: "Request a quote — TLB Enterprise" },
-      { property: "og:description", content: "Formal quotations for tenders, purchase orders and call-off supply." },
-    ],
-  }),
+  head: () =>
+    privatePageHead(
+      "Request a quote — TLB Enterprise",
+      "Build a list of laboratory products and request a quotation from TLB Enterprise in Accra.",
+    ),
   component: QuotePage,
 });
+
+const QUOTE_DRAFT = "quote";
 
 function QuoteLine({
   line,
@@ -56,7 +53,9 @@ function QuoteLine({
   if (error || !p) {
     return (
       <div className="flex items-center justify-between gap-4 p-4">
-        <p className="text-sm text-muted-foreground">This product is no longer available.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          This product could not be loaded. Remove it from the list to continue.
+        </p>
         <Button variant="ghost" size="sm" onClick={() => removeFromQuote(line.id)}>
           Remove
         </Button>
@@ -104,13 +103,19 @@ function QuotePage() {
       enabled: Boolean(line.id),
     })),
   });
-  const [form, setForm] = useState({
-    name: "",
-    email: user?.email ?? "",
-    phone: "",
-    institution: "",
-    notes: "",
-  });
+  const [form, setForm] = useState(() =>
+    readFormDraft(QUOTE_DRAFT, {
+      name: "",
+      email: user?.email ?? "",
+      phone: "",
+      institution: "",
+      notes: "",
+    }),
+  );
+
+  useEffect(() => {
+    writeFormDraft(QUOTE_DRAFT, form);
+  }, [form]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -123,9 +128,9 @@ function QuotePage() {
       <div className="container-page py-24 text-center">
         <h1 className="font-display text-2xl font-extrabold">Quote request received</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Keep this reference: {confirmedQuote}. We will return institutional pricing separately. This
-          is not an invoice and no payment was taken. Retrying the same submit returns this request; it
-          does not create another one.
+          Your request has been received. Keep this reference: {confirmedQuote}. TLB will review the list
+          and provide pricing. You can view the request in Account. If your submission needs to be
+          retried, you can safely submit again.
         </p>
         <Button asChild className="mt-6">
           <Link to="/account">View your quote requests</Link>
@@ -142,7 +147,7 @@ function QuotePage() {
     }
     if (!user) {
       toast.error("Please sign in to submit a quote request");
-      navigate({ to: "/auth" });
+      navigate({ to: "/auth", search: { redirect: "/quote" } });
       return;
     }
     setBusy(true);
@@ -173,6 +178,7 @@ function QuotePage() {
       });
 
       clearSubmissionNonce("quote");
+      clearFormDraft(QUOTE_DRAFT);
       clearQuote();
       setConfirmedQuote(reference);
       toast.success(`Quote request ${reference} submitted`, {
@@ -191,9 +197,20 @@ function QuotePage() {
     <div className="container-page py-10">
       <h1 className="font-display text-3xl font-extrabold">Request a quote</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Ideal for tenders, purchase orders and bulk or call-off supply. Add the products you need, tell us
-        the quantities, and we'll return formal institutional pricing with lead times.
+        Add the products you need and tell us the quantities. Our team will review the request and provide
+        pricing. This is not an invoice and no payment is taken online.
       </p>
+      {!user ? (
+        <div className="mt-6 rounded-md border border-border bg-primary-soft px-4 py-3 text-sm">
+          <p className="font-semibold">Sign in to submit a quote request.</p>
+          <p className="mt-1 text-muted-foreground">Your list and contact details stay on this device until you return.</p>
+          <Button asChild size="sm" className="mt-3">
+            <Link to="/auth" search={{ redirect: "/quote" }}>
+              Sign in
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_22rem]">
         <div>
@@ -270,7 +287,7 @@ function QuotePage() {
           </Button>
           {!user && (
             <p className="text-xs text-muted-foreground">
-              <Link to="/auth" className="font-semibold text-primary hover:underline">
+              <Link to="/auth" search={{ redirect: "/quote" }} className="font-semibold text-primary hover:underline">
                 Sign in
               </Link>{" "}
               to submit and track your quote requests.

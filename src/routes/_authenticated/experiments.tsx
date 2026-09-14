@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { privatePageHead } from "@/lib/seo";
 import {
   Select,
   SelectContent,
@@ -21,17 +22,11 @@ import {
 } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/experiments")({
-  head: () => ({
-    meta: [
-      { title: "My experiments — saved product lists | TLB Enterprise" },
-      {
-        name: "description",
-        content: "Save recurring reagent and consumable lists as experiments and reorder them in one click.",
-      },
-      { property: "og:title", content: "My experiments — TLB Enterprise" },
-      { property: "og:description", content: "Reusable laboratory product lists for fast reordering." },
-    ],
-  }),
+  head: () =>
+    privatePageHead(
+      "My experiments — saved product lists | TLB Enterprise",
+      "Save recurring reagent and consumable lists as experiments and reorder them in one click.",
+    ),
   component: Experiments,
 });
 

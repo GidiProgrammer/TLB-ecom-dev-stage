@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   accountTypeLabel,
   approvalPresentation,
+  orderStatusExplanation,
   orderStatusLabel,
   quoteStatusLabel,
 } from "@/lib/account-display";
@@ -28,16 +29,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { privatePageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/account")({
-  head: () => ({
-    meta: [
-      { title: "Account dashboard — TLB Enterprise" },
-      { name: "description", content: "Track your laboratory orders, quotation requests and account status." },
-      { property: "og:title", content: "Account dashboard — TLB Enterprise" },
-      { property: "og:description", content: "Manage your TLB Enterprise laboratory supply account." },
-    ],
-  }),
+  head: () =>
+    privatePageHead(
+      "Account dashboard — TLB Enterprise",
+      "Track your laboratory orders, quotation requests and account status.",
+    ),
   component: Account,
 });
 
@@ -321,6 +320,9 @@ function OrderHistoryCard({ order }: { order: AccountOrder }) {
           <span className="font-display text-sm font-bold text-primary">{formatGHS(Number(order.total))}</span>
         </div>
       </div>
+      {orderStatusExplanation(order.status) ? (
+        <p className="mt-2 text-xs text-muted-foreground">{orderStatusExplanation(order.status)}</p>
+      ) : null}
       <details className="mt-3">
         <summary className="cursor-pointer text-sm font-medium text-primary">Order details</summary>
         <div className="mt-3 space-y-3 text-sm">
@@ -368,7 +370,7 @@ function QuoteHistoryCard({ quote }: { quote: AccountQuote }) {
       await acceptQuote({ data: { quoteId: quote.id } });
       await queryClient.invalidateQueries({ queryKey: ["account-quotes"] });
       toast.success(`Quotation ${quote.reference} accepted`, {
-        description: "This is not an order and no payment was taken.",
+        description: "Acceptance does not create an order. Contact TLB for the next business step.",
       });
     } catch (error) {
       const message = error instanceof Error && error.message ? error.message : "Could not accept quotation";
@@ -390,6 +392,22 @@ function QuoteHistoryCard({ quote }: { quote: AccountQuote }) {
         </div>
         <Badge variant="secondary">{quoteStatusLabel(quote.status)}</Badge>
       </div>
+      {quote.status === "accepted" ? (
+        <div className="mt-3 space-y-2 rounded-md border border-border bg-secondary/40 p-3">
+          <p className="text-xs text-muted-foreground">
+            This quotation has been accepted. Acceptance does not create an order or reserve stock. Contact
+            TLB for the next business step.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link to="/contact">Contact TLB</Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/account">View account</Link>
+            </Button>
+          </div>
+        </div>
+      ) : null}
       {canAccept ? (
         <div className="mt-3 space-y-2 rounded-md border border-border bg-secondary/40 p-3">
           <p className="text-xs text-muted-foreground">

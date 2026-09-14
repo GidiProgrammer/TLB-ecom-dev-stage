@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { FileText, ShoppingCart, FlaskConical, Check } from "lucide-react";
 import { toast } from "sonner";
-import { formatGHS, remainingPurchasableQty, stockLabel, stockStatus } from "@/lib/catalog-utils";
+import { formatGHS, remainingPurchasableQty, stockLabel, stockStatus, unavailableReason, purchaseUnavailableLabel, purchaseUnavailableMessage } from "@/lib/catalog-utils";
 import { fetchProductBySlug, useCategories, useRelatedProducts } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { ProductCard } from "@/components/site/ProductCard";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function productMetaDescription(text: string) {
   const trimmed = text.trim();
@@ -83,17 +84,18 @@ function ProductDetail() {
   const { data: categories } = useCategories();
   const { addToCart, addToQuote, cart } = useStore();
   const [qty, setQty] = useState(1);
-  const { data: related } = useRelatedProducts(product.categoryId ?? "", product.productId);
+  const { data: related, isLoading: relatedLoading } = useRelatedProducts(product.categoryId ?? "", product.productId);
   const category = categories?.find((c) => c.slug === product.categorySlug);
   const status = stockStatus(product.stock_quantity, product.low_stock_threshold);
   const inCart = cart.find((line) => line.id === product.id)?.qty ?? 0;
   const remaining = remainingPurchasableQty(product.stock_quantity, inCart);
+  const blocked = unavailableReason(product.stock_quantity, inCart);
   const canPurchase = remaining > 0;
   const qtyToAdd = Math.min(Math.max(1, Math.floor(qty) || 1), Math.max(1, remaining));
 
   const handleAddToCart = () => {
     if (!canPurchase) {
-      toast.error("This product is out of stock");
+      toast.error(blocked ? purchaseUnavailableMessage(blocked) : "This product is out of stock");
       return;
     }
     const requested = Math.max(1, Math.floor(qty) || 1);
@@ -159,7 +161,7 @@ function ProductDetail() {
             <span className="text-sm text-muted-foreground">per {product.unit}</span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Prices exclude delivery. Institutional pricing available on quotation.
+            Prices exclude delivery. Request a quotation if you need organisation-specific pricing.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -192,7 +194,7 @@ function ProductDetail() {
               </>
             ) : (
               <Button size="lg" disabled>
-                Out of stock
+                {blocked ? purchaseUnavailableLabel(blocked) : "Out of stock"}
               </Button>
             )}
             <Button
@@ -206,6 +208,9 @@ function ProductDetail() {
               <FileText className="h-4 w-4" /> Add to quote
             </Button>
           </div>
+          {blocked === "in-cart" ? (
+            <p className="mt-2 text-xs text-muted-foreground">{purchaseUnavailableMessage("in-cart")}</p>
+          ) : null}
           {status === "low-stock" && canPurchase ? (
             <p className="mt-2 text-xs text-muted-foreground">Limited availability. Stock is confirmed when you place the order.</p>
           ) : null}
@@ -250,10 +255,10 @@ function ProductDetail() {
         </TabsContent>
         <TabsContent value="delivery" className="mt-4 max-w-2xl space-y-2 text-sm text-muted-foreground">
           {[
-            "Accra deliveries typically dispatched within 48 hours of a confirmed order.",
-            "Regional delivery across Ghana arranged with tracked courier or our own transport.",
-            "Analytical grade items ship with the batch certificate of analysis.",
-            "Purchase orders and institutional invoicing accepted — payment is arranged offline.",
+            "Delivery across Ghana is arranged after an order is confirmed.",
+            "Regional delivery can be arranged with courier or our own transport.",
+            "Ask us for a batch certificate of analysis on analytical-grade items.",
+            "Purchase orders and invoicing are accepted — payment is arranged offline.",
           ].map((t) => (
             <p key={t} className="flex gap-2">
               <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> {t}
@@ -262,14 +267,25 @@ function ProductDetail() {
         </TabsContent>
       </Tabs>
 
-      <section className="mt-14">
-        <h2 className="font-display text-xl font-extrabold">Related products</h2>
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {(related ?? []).map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
+      {relatedLoading ? (
+        <section className="mt-14">
+          <h2 className="font-display text-xl font-extrabold">Related products</h2>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-4/3 w-full rounded-md" />
+            ))}
+          </div>
+        </section>
+      ) : related && related.length > 0 ? (
+        <section className="mt-14">
+          <h2 className="font-display text-xl font-extrabold">Related products</h2>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

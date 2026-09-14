@@ -8,16 +8,14 @@ import { useStore, type LineItem } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { privatePageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/cart")({
-  head: () => ({
-    meta: [
-      { title: "Your cart — TLB Enterprise" },
-      { name: "description", content: "Review the laboratory products in your cart before placing an order with TLB Enterprise." },
-      { property: "og:title", content: "Your cart — TLB Enterprise" },
-      { property: "og:description", content: "Review your laboratory supply order before checkout." },
-    ],
-  }),
+  head: () =>
+    privatePageHead(
+      "Your cart — TLB Enterprise",
+      "Review the laboratory products in your cart before placing an order with TLB Enterprise.",
+    ),
   component: CartPage,
 });
 
