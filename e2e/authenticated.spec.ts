@@ -36,10 +36,35 @@ test.describe("authenticated account", () => {
     await expect(
       quotesPanel.getByText(/^QT-/).or(quotesPanel.getByText("No quote requests yet")).first(),
     ).toBeVisible();
+    await expect(quotesPanel.getByRole("button", { name: "Accept quotation" })).toHaveCount(
+      await quotesPanel.getByText("Price provided").count(),
+    );
 
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/account/);
     await expect(page.getByRole("heading", { name: "Admin overview" })).toHaveCount(0);
+  });
+
+  test("customer can accept a quoted quotation without creating an order", async ({ page }) => {
+    await page.goto("/account");
+    await page.getByRole("tab", { name: "Quote requests" }).click();
+    const quotesPanel = page.getByRole("tabpanel", { name: "Quote requests" });
+    await expect(quotesPanel.getByText(/^QT-/).first()).toBeVisible();
+    const accept = quotesPanel.getByRole("button", { name: "Accept quotation" });
+    if ((await accept.count()) === 0) {
+      test.skip(true, "No quoted quote is available for this fixture");
+    }
+
+    await expect(quotesPanel.getByText(/does not create an order or process payment/i).first()).toBeVisible();
+    const card = quotesPanel.locator("article").filter({ hasText: "Accept quotation" }).first();
+    const reference = (await card.locator("h3").innerText()).trim();
+    await card.getByRole("button", { name: "Accept quotation" }).click();
+    await expect(page.getByText(`Quotation ${reference} accepted`)).toBeVisible();
+    await expect(page).toHaveURL(/\/account/);
+    await expect(page.getByRole("heading", { name: "Checkout" })).toHaveCount(0);
+    const updated = quotesPanel.locator("article").filter({ hasText: reference });
+    await expect(updated.getByText("Accepted", { exact: true })).toBeVisible();
+    await expect(updated.getByRole("button", { name: "Accept quotation" })).toHaveCount(0);
   });
 
   test("customer can save allowed profile fields and they persist after reload", async ({ page }) => {

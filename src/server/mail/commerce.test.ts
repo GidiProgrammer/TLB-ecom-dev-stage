@@ -142,6 +142,7 @@ describe("client / security contract", () => {
       assert.equal(text.includes("processTransactionalEmailOutbox"), false, rel);
       assert.equal(text.includes("create_order_with_items"), false, rel);
       assert.equal(text.includes("create_quote_with_items"), false, rel);
+      assert.equal(text.includes("accept_quote"), false, rel);
       assert.equal(text.includes("CONTACT_RECIPIENT_EMAIL"), false, rel);
     }
   });
@@ -161,6 +162,9 @@ describe("client / security contract", () => {
     assert.match(quotes, /p_submission_nonce: data\.submissionNonce/);
     assert.match(quotes, /enqueueQuoteCreatedFromRecord/);
     assert.match(quotes, /contactEmail: quote\?\.contact_email/);
+    assert.match(quotes, /export const acceptQuote/);
+    assert.match(quotes, /accept_quote/);
+    assert.match(quotes, /existing\.user_id !== context\.userId/);
   });
 
   test("admin lifecycle mutations remain staff-gated and do not enqueue from routes", () => {

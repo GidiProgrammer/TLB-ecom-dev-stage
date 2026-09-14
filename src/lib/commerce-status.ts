@@ -58,6 +58,10 @@ export function assertValidOrderTransition(from: OrderStatus, to: OrderStatus) {
   }
 }
 
+export function isQuoteCustomerAcceptable(status: QuoteStatus) {
+  return status === "quoted";
+}
+
 export function allowedQuoteTransitions(from: QuoteStatus): readonly QuoteStatus[] {
   return QUOTE_TRANSITIONS[from];
 }

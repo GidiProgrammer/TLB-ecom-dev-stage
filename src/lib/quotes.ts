@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertValidQuoteTransition } from "@/lib/commerce-status";
 
 const quoteInputSchema = z.object({
   userId: z.string().uuid(),
@@ -91,4 +92,64 @@ export const createQuote = createServerFn({ method: "POST" })
         contactEmail: quote?.contact_email ?? null,
       }),
     );
+  });
+
+const acceptQuoteSchema = z.object({
+  quoteId: z.string().uuid(),
+});
+
+export const acceptQuote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: unknown) => acceptQuoteSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: existing, error: loadError } = await supabaseAdmin
+      .from("quotes")
+      .select("id, reference, status, user_id")
+      .eq("id", data.quoteId)
+      .maybeSingle();
+
+    if (loadError) {
+      console.error("[acceptQuote]", loadError.message);
+      throw new Error("Could not accept quotation");
+    }
+    if (!existing) {
+      throw new Error("Quote not found");
+    }
+    if (existing.user_id !== context.userId) {
+      throw new Error("Unauthorized");
+    }
+
+    assertValidQuoteTransition(existing.status, "accepted");
+
+    const { data: payload, error } = await supabaseAdmin.rpc("accept_quote", {
+      p_quote_id: data.quoteId,
+    });
+
+    if (error) {
+      console.error("[acceptQuote]", error.message);
+      const lower = error.message.toLowerCase();
+      if (lower.includes("cannot be accepted")) throw new Error("This quotation cannot be accepted yet");
+      if (lower.includes("not found")) throw new Error("Quote not found");
+      throw new Error("Could not accept quotation");
+    }
+
+    const result = payload as {
+      quote_id?: string;
+      reference?: string;
+      status?: string;
+      replayed?: boolean;
+    } | null;
+
+    if (!result?.quote_id || result.status !== "accepted") {
+      throw new Error("Could not accept quotation");
+    }
+
+    return {
+      quoteId: String(result.quote_id),
+      reference: String(result.reference ?? existing.reference),
+      status: "accepted" as const,
+      replayed: Boolean(result.replayed),
+    };
   });

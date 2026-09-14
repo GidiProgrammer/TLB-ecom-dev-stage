@@ -1888,6 +1888,10 @@ export type Database = {
         Args: { _order_id: string; _product_id: string; _qty: number }
         Returns: undefined
       }
+      accept_quote: {
+        Args: { p_quote_id: string }
+        Returns: Json
+      }
       cancel_order_and_restore_stock: {
         Args: { p_order_id: string }
         Returns: Json

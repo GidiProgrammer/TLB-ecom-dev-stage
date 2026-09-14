@@ -131,7 +131,13 @@ function Admin() {
           ) : quotes.error ? (
             <p className="text-sm text-muted-foreground">Could not load quotes. Please try again.</p>
           ) : (
-            <QuoteList quotes={quotes.data ?? []} />
+            <>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Accepted means the customer agreed to the quoted prices. It is not an order, payment, or
+                warehouse instruction.
+              </p>
+              <QuoteList quotes={quotes.data ?? []} />
+            </>
           )}
         </TabsContent>
         <TabsContent value="catalogue" className="mt-4">

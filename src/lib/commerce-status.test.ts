@@ -6,6 +6,7 @@ import {
   assertValidOrderTransition,
   assertValidQuoteTransition,
   isOrderCancellable,
+  isQuoteCustomerAcceptable,
   isSameStatus,
   isTerminalOrderStatus,
   isTerminalQuoteStatus,
@@ -127,8 +128,10 @@ describe("quote status machine", () => {
   });
 
   test("quote acceptance remains status-only", () => {
-    const sqlFree = true;
     assert.equal(isValidQuoteTransition("quoted", "accepted"), true);
-    assert.equal(sqlFree, true);
+    assert.equal(isQuoteCustomerAcceptable("quoted"), true);
+    assert.equal(isQuoteCustomerAcceptable("accepted"), false);
+    assert.equal(isQuoteCustomerAcceptable("submitted"), false);
+    assert.doesNotThrow(() => assertValidQuoteTransition("quoted", "accepted"));
   });
 });

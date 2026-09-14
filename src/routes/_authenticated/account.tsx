@@ -11,6 +11,8 @@ import {
   quoteStatusLabel,
 } from "@/lib/account-display";
 import { formatGHS } from "@/lib/catalog-utils";
+import { isQuoteCustomerAcceptable } from "@/lib/commerce-status";
+import { acceptQuote } from "@/lib/quotes";
 import {
   normalizeProfileUpdate,
   updateAccountProfile,
@@ -354,8 +356,28 @@ function OrderHistoryCard({ order }: { order: AccountOrder }) {
 }
 
 function QuoteHistoryCard({ quote }: { quote: AccountQuote }) {
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
   const hasQuotedPrice = quote.quote_items.some((item) => item.quoted_price != null);
   const contactBits = [quote.contact_name, quote.contact_email, quote.contact_phone].filter(Boolean);
+  const canAccept = isQuoteCustomerAcceptable(quote.status);
+
+  const accept = async () => {
+    setBusy(true);
+    try {
+      await acceptQuote({ data: { quoteId: quote.id } });
+      await queryClient.invalidateQueries({ queryKey: ["account-quotes"] });
+      toast.success(`Quotation ${quote.reference} accepted`, {
+        description: "This is not an order and no payment was taken.",
+      });
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : "Could not accept quotation";
+      toast.error(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <article className="p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -368,6 +390,17 @@ function QuoteHistoryCard({ quote }: { quote: AccountQuote }) {
         </div>
         <Badge variant="secondary">{quoteStatusLabel(quote.status)}</Badge>
       </div>
+      {canAccept ? (
+        <div className="mt-3 space-y-2 rounded-md border border-border bg-secondary/40 p-3">
+          <p className="text-xs text-muted-foreground">
+            Accepting confirms that you agree to the quoted prices. It does not create an order or process
+            payment.
+          </p>
+          <Button type="button" size="sm" disabled={busy} onClick={() => void accept()}>
+            {busy ? "Accepting…" : "Accept quotation"}
+          </Button>
+        </div>
+      ) : null}
       {quote.notes ? <p className="mt-2 text-xs text-muted-foreground">{quote.notes}</p> : null}
       <details className="mt-3">
         <summary className="cursor-pointer text-sm font-medium text-primary">Quote details</summary>
