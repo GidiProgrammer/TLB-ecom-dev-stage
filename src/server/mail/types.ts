@@ -8,7 +8,21 @@ export type SendTransactionalEmailInput = {
   templateId: string;
   data: TransactionalEmailData;
   idempotencyKey: string;
+  html?: string;
+  text?: string;
 };
+
+export class MailProviderError extends Error {
+  readonly retryable: boolean;
+  readonly statusCode: number | undefined;
+
+  constructor(message: string, options: { retryable: boolean; statusCode?: number }) {
+    super(message);
+    this.name = "MailProviderError";
+    this.retryable = options.retryable;
+    this.statusCode = options.statusCode;
+  }
+}
 
 export type SentTransactionalEmail = SendTransactionalEmailInput & {
   capturedAt: string;

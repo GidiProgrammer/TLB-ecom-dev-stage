@@ -1,8 +1,14 @@
-# Customer transactional email (CP26)
+# Customer transactional email (CP26 / CP32)
 
 Source of truth for **customer commerce** email. Warehouse `notifications` is a separate in-app/ops table and must not be used here.
 
-Phase 1 ships the outbox, mail adapter, and capture driver. Phase 2A wires **order.created** and **quote.created** after the existing SECURITY DEFINER commerce RPCs commit. Phase 2B adds a **manual, server-only** outbox processor (claim → send via adapter → sent/failed) with bounded retries. There is **no cron or continuously running worker**. No warehouse/ops mail. No in-app inbox. No password reset. No CP22 purchasing/quote policy. No payment provider. No real email provider.
+Pipeline:
+
+```text
+event → transactional_email_outbox → Vercel Cron → protected processor → MailDriver (capture | resend)
+```
+
+Phase 1 shipped the outbox, mail adapter, and capture driver. Later phases wired commerce, lifecycle, profile, and contact events. CP32 adds a Resend production adapter, HTML/text templates, and a Bearer-protected Cron endpoint. No warehouse/ops mail. No in-app inbox. No password reset. No CP22 purchasing/quote policy. No payment provider. There is **no** `quote.accepted` email.
 
 ## Invariant
 
@@ -45,7 +51,7 @@ Payloads are notices only (`quote_ready`, `quote_declined`, `order_shipped`, `or
 
 Enqueue is post-commit and best-effort (`notifyAfterCommerceCommit`). A failed outbox write is logged; the staff mutation still succeeds so they are not pushed into a duplicate status retry.
 
-Rows are durable in `transactional_email_outbox` but **are not delivered** until something calls `processTransactionalEmailOutbox`. Capture never sends real email. No cron/worker in this phase.
+Rows are durable in `transactional_email_outbox` and are delivered when the protected processor runs. Preview/staging must use capture so no real customer email is sent.
 
 ## Phase 3B profile approval wiring
 
@@ -64,7 +70,7 @@ Payload is `{ notice: "account_approved" \| "account_rejected" }` plus `fullName
 
 Enqueue is post-commit and best-effort. A failed outbox write is logged; the approval/rejection still succeeds.
 
-These events are durable in the outbox only. Capture does not send real email. There is still no scheduled worker.
+These events are durable in the outbox and delivered by the same processor as other templates.
 
 ## Phase 4 contact form
 
@@ -101,9 +107,9 @@ Enqueue happens after validation. A successful response means the enquiry was **
 
 Outbox payload (privileged, not queried from the client): `enquiryId`, `name`, `email`, `message`, optional `phone`/`institution`, `replyTo`. No IP, cookies, tokens, or service-role secrets.
 
-### What is still not running
+### What is still capture-only on Preview
 
-`MAIL_DRIVER=capture`. No real provider. No cron/worker. Warehouse `notifications` is unused. No password reset. No CP22 change.
+Preview/staging must keep `MAIL_DRIVER=capture`. Warehouse `notifications` is unused. No password reset. No CP22 change.
 
 Optional later uniqueness (if line-level staff pricing needs its own mail): `quote.price:{quote_item_id}`.
 
@@ -115,7 +121,9 @@ Postgres cannot wrap the existing SECURITY DEFINER RPC and the outbox insert in 
 
 ## Phase 2B processor
 
-`processTransactionalEmailOutbox` (under `src/server/mail/`) is the only processing entry point. It is not imported from routes and is not scheduled.
+`processTransactionalEmailOutbox` (under `src/server/mail/`) is the only processing entry point. Production invokes it through `GET`/`POST` `/api/cron/transactional-email` (TanStack Start server route, **not** a `createServerFn`). CSRF middleware applies only to server functions, so Cron can call this HTTP route with a Bearer secret.
+
+The route file dynamically loads the handler via `src/lib/cron-transactional-email.ts` so browser route modules do not statically import `src/server/**`.
 
 ### Claim
 
@@ -147,70 +155,61 @@ Maximum attempts: **5**. After a failed send with attempts remaining, status ret
 
 ### Capture driver
 
-`MAIL_DRIVER=capture` (default) records the attempt in process memory and returns success with `delivered: false`. The processor therefore marks the row `sent` even though **no real email is sent**. Production providers are not implemented.
+`MAIL_DRIVER=capture` (default, required on Preview) records the attempt in process memory and returns success with `delivered: false`. The processor therefore marks the row `sent` even though **no real email is sent**.
+
+### Resend driver
+
+`MAIL_DRIVER=resend` uses native `fetch` against Resend’s HTTP API (`https://api.resend.com/emails`). It requires server-only `MAIL_PROVIDER_API_KEY` and `MAIL_FROM`. Optional `MAIL_REPLY_TO` is used when the event has no `payload.replyTo`. HTML and plaintext bodies are rendered before send. The outbox `event_key` is sent as the `Idempotency-Key` header.
+
+Unknown `MAIL_DRIVER` values fail closed. There is no silent fallback from `resend` to `capture`.
+
+Provider requests abort after about 8 seconds (`AbortController`). Retryable failures: network errors, timeouts, HTTP 429, HTTP 5xx. Permanent failures: most other 4xx responses and missing configuration. Permanent errors mark the outbox row `failed` without waiting for five attempts.
 
 ### Duplicate-send limitation
 
-This is **at-least-once after crash**, not exactly-once:
+Delivery is **at-least-once**. The outbox guarantees one row per business event. Provider idempotency protects against duplicate delivery during crash recovery **where the provider honours `Idempotency-Key`**.
+
+Do not claim exactly-once delivery:
 
 - one durable `event_key`
 - one active claim at a time
 - retries after failure or stale `sending`
 
-If the adapter/provider accepts a message and the worker dies before `sent` is written, a later stale recovery may send again. Do not treat this as provider-level exactly-once delivery.
+If the provider accepts a message and the worker dies before `sent` is written, a later stale recovery may send again.
 
-### What is not running
+### Processor HTTP contract
 
-There is **no scheduled worker or cron**. Rows stay in the outbox until something server-side calls the processor. This is not production-grade guaranteed delivery.
+- Missing `CRON_SECRET` → `500`, nothing processed
+- Missing or invalid `Authorization: Bearer …` → `401`
+- Valid secret → process a fixed batch of **10** (query `limit` is ignored)
+- JSON body: `claimed`, `sent`, `retryScheduled`, `permanentlyFailed` only — no addresses, payloads, or provider responses
+- Customer JWTs and service-role keys are not accepted as Cron credentials
 
-## Phase 5 — production delivery infrastructure (audit)
+Vercel Cron (`vercel.json`, `*/5 * * * *`) is intended for **Production**. Preview should not send real mail.
 
-**Nothing in the current deployment will invoke `processTransactionalEmailOutbox`.** Capture remains the only driver. This phase does **not** add a cron route, worker, provider, or invented scheduler.
+## CP32 configuration
 
-### What the repository and Lovable project prove
+### Preview / staging
 
-- The app is **TanStack Start** (`tech_stack: tanstack_start_ts_current`), connected to Lovable project `e19d5b65-2ade-41fe-b3c2-0e8f5c6fe839`. Preview: `*.lovable.app`. `is_published` was **false** at audit time (preview only; no documented production publish URL in-repo).
-- Production **build target is Vercel via Nitro** (`vite.config.ts`: `preset: "vercel"`; Vercel Build Output API under `.vercel/output`). There is **no `vercel.json`**, no GitHub Actions, no committed `wrangler.toml`. `src/server.ts` implements `fetch` only — no `scheduled` handler and no Vercel Cron. See `docs/VERCEL_DEPLOYMENT.md`. The former Cloudflare Worker path is historical (`docs/CLOUDFLARE_DEPLOYMENT.md`).
-- Data: linked Supabase `mothgrmclaowhsiemiuj` (`supabase/config.toml`). Lovable Cloud database is enabled (`stack: supabase`). There is **no `supabase/functions/`** directory.
-- Server work today is **request-scoped**: `createServerFn` handlers and SSR. CSRF in `src/start.ts` applies to **server functions**, not a hypothetical HTTP cron.
-- `src/integrations/supabase/cron-auth.ts` is **auto-generated** and **unused**. It requires server-only `LOVABLE_CRON_SECRET` (optional rotation via `LOVABLE_CRON_SECRET_PREVIOUS`), `Authorization: Bearer …`, SHA-256 + `timingSafeEqual`. Missing secret → 500. Bad/missing token → 401. Suitable for a future HTTP worker; it is not a scheduler. Those vars are listed in `.env.example` (no `VITE_`). They are **not** set in local `.env` at audit time.
+```text
+MAIL_DRIVER=capture
+```
 
-### What it does not prove
+No `MAIL_PROVIDER_API_KEY` required. Do not send real customer email.
 
-- That Lovable will call any app URL on a timer with `LOVABLE_CRON_SECRET`.
-- That Lovable Cloud **Jobs** (Cloud tab; create via Lovable chat/SQL) run inside this Worker or call `processTransactionalEmailOutbox`. Official Jobs docs describe the **built-in Cloud backend**, not this Nitro worker.
-- That adding Vercel Cron or a Cloudflare Worker `scheduled` handler would be present in this repo (they are not).
-- A live production hostname that an external scheduler could hit.
+### Production
 
-Lovable docs also mention **Inngest** as an optional connector (not present in this repo) and third-party HTTP cron as an unofficial pattern. Neither is configured here.
+```text
+MAIL_DRIVER=resend
+MAIL_FROM=<verified TLB domain sender>
+MAIL_PROVIDER_API_KEY=<secret>
+CRON_SECRET=<high entropy secret>
+CONTACT_RECIPIENT_EMAIL=<TLB staff recipient>
+```
 
-### Safest architecture when a scheduler *is* available
+A verified sending domain is required in Resend before production cutover.
 
-Do not run an unbounded loop. One bounded pass:
-
-1. Authenticate with existing `authenticateCronRequest` (not customer JWT).
-2. `processTransactionalEmailOutbox({ limit: 10 })` — reuse claim/`SKIP LOCKED`/retry policy; do not duplicate it.
-3. Log/return counts only: `claimed`, `sent`, `retryScheduled`, `permanentlyFailed`. No payloads, emails, or secrets.
-4. HTTP 200 with that summary even if some rows retry/fail (the processor already records per-row outcome).
-5. Cadence: **every 5 minutes** is enough vs 60s backoff / 15m cap / 10m stale recovery. Tighter than 1 minute is unnecessary given Worker/credit cost.
-
-Preferred invocation, in order, once **proven** on the real host:
-
-1. **Option B** — protected TanStack **server route** (not a `createServerFn`; CSRF would block external callers) invoked by a platform or external scheduler with Bearer `LOVABLE_CRON_SECRET`.
-2. **Option A** — platform cron (Vercel Cron or similar) calling a protected HTTP route — **not configured**; do not add in the deployment-target switch.
-3. **Option E** — Supabase scheduled Edge Function, only if we accept a second runtime that must hold the same secrets and call the same processor (or HTTP to the app). Not present today.
-4. **Option D** — dedicated worker process: not in this hosting model.
-
-Do **not** use customer session cookies. Do not take batch size or event IDs from the request. Concurrent runs are already safe via `FOR UPDATE SKIP LOCKED`.
-
-### Must be configured before implementing a scheduler
-
-1. Confirm **where production is published** (Vercel Preview/Production URL) and the **canonical HTTPS origin**.
-2. Confirm **who will HTTP-call** a future protected processor route (Vercel Cron vs external cron vs Inngest) with a real test that is not a guess. Do not add a scheduler in the Vercel target switch.
-3. Set server-only `LOVABLE_CRON_SECRET` (and rotation secret if needed) in that host’s secret store — never `VITE_`.
-4. Keep `MAIL_DRIVER=capture` until a later provider checkpoint.
-
-Until those are true, enqueue remains durable and **delivery is still manual/unscheduled**.
+All of the above are server-only (`process.env`). Never use a `VITE_` prefix.
 
 ## Payload
 
@@ -218,4 +217,4 @@ Store only what the template needs (order/quote reference, item names, quoted un
 
 ## Drivers
 
-`sendTransactionalEmail` lives under `src/server/`. Default driver is **capture** (records the attempt, never sends). A production provider (e.g. Resend) can be added later without importing it from routes. Never put provider secrets on `VITE_*`.
+`sendTransactionalEmail` lives under `src/server/`. `MAIL_DRIVER=capture` records attempts and never sends. `MAIL_DRIVER=resend` delivers through Resend. Templates are rendered server-side (`html` + `text`) with HTML escaping of untrusted strings. Never put provider secrets on `VITE_*`.

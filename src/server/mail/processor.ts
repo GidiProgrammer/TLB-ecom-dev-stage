@@ -8,7 +8,8 @@ import {
   markOutboxAttemptFailed,
   markOutboxSent,
 } from "./outbox.ts";
-import type { SendTransactionalEmailInput, SentTransactionalEmail, TransactionalOutboxRow } from "./types.ts";
+import { renderTransactionalEmail } from "./templates.ts";
+import { MailProviderError, type SendTransactionalEmailInput, type SentTransactionalEmail, type TransactionalOutboxRow } from "./types.ts";
 
 export type ProcessOutboxOptions = {
   limit?: number;
@@ -25,7 +26,7 @@ export type ProcessOutboxResult = {
 
 /**
  * Claim pending/stale outbox rows and run them through the mail adapter.
- * Not scheduled. Not imported from routes. Capture driver records; it does not send.
+ * HTTP cron invokes this via the protected processor endpoint.
  */
 export async function processTransactionalEmailOutbox(
   options: ProcessOutboxOptions = {},
@@ -66,6 +67,7 @@ async function deliverClaimedRow(
 ): Promise<"sent" | "retry" | "permanent"> {
   try {
     const replyTo = safeReplyTo(row.payload["replyTo"]);
+    const rendered = renderTransactionalEmail(row.templateId, row.payload);
     await send({
       to: row.recipientEmail,
       ...(replyTo ? { replyTo } : {}),
@@ -73,12 +75,15 @@ async function deliverClaimedRow(
       templateId: row.templateId,
       data: row.payload,
       idempotencyKey: row.eventKey,
+      html: rendered.html,
+      text: rendered.text,
     });
     await markOutboxSent(row.id, now);
     return "sent";
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const permanent = row.attemptCount >= MAIL_MAX_ATTEMPTS;
+    const providerPermanent = error instanceof MailProviderError && error.retryable === false;
+    const permanent = providerPermanent || row.attemptCount >= MAIL_MAX_ATTEMPTS;
     await markOutboxAttemptFailed(row.id, {
       now,
       attemptCount: row.attemptCount,

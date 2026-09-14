@@ -1,18 +1,24 @@
 import { captureMailDriver } from "./capture-driver.ts";
-import type { MailDriver, SendTransactionalEmailInput, SentTransactionalEmail } from "./types.ts";
+import { resendMailDriver } from "./resend-driver.ts";
+import { MailProviderError, type MailDriver, type SendTransactionalEmailInput, type SentTransactionalEmail } from "./types.ts";
 
-function resolveDriver(): MailDriver {
+export function resolveMailDriver(): MailDriver {
   const requested = process.env["MAIL_DRIVER"]?.trim().toLowerCase();
   if (!requested || requested === "capture") {
     return captureMailDriver;
   }
-  // Production providers are not implemented in Phase 1. Never send real mail.
-  throw new Error(`Mail driver "${requested}" is not available. Use MAIL_DRIVER=capture.`);
+  if (requested === "resend") {
+    return resendMailDriver;
+  }
+  throw new MailProviderError(
+    `Unknown MAIL_DRIVER "${requested}". Use MAIL_DRIVER=capture or MAIL_DRIVER=resend.`,
+    { retryable: false },
+  );
 }
 
 export async function sendTransactionalEmail(
   input: SendTransactionalEmailInput,
 ): Promise<SentTransactionalEmail> {
-  const driver = resolveDriver();
+  const driver = resolveMailDriver();
   return driver.send(input);
 }

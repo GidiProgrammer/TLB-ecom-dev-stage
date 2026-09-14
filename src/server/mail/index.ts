@@ -1,5 +1,9 @@
-export { sendTransactionalEmail } from "./adapter.ts";
+export { sendTransactionalEmail, resolveMailDriver } from "./adapter.ts";
 export { captureMailDriver, getCapturedEmails, resetCapturedEmails } from "./capture-driver.ts";
+export { resendMailDriver } from "./resend-driver.ts";
+export { MailProviderError } from "./types.ts";
+export { renderTransactionalEmail } from "./templates.ts";
+export { handleTransactionalEmailCron } from "./http.ts";
 export {
   claimPendingTransactionalEmails,
   enqueueInMemory,

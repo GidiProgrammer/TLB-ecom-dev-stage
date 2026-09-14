@@ -131,6 +131,19 @@ describe("outbox processor", () => {
     assert.equal(listMemoryOutbox().length, 1);
   });
 
+  test("permanent provider errors fail the row without exhausting retries", async () => {
+    const { MailProviderError } = await import("./types.ts");
+    enqueueSample("ord-4xx");
+    const result = await processTransactionalEmailOutbox({
+      now: new Date("2026-09-12T21:00:00.000Z"),
+      send: async () => {
+        throw new MailProviderError("Resend request rejected (422)", { retryable: false, statusCode: 422 });
+      },
+    });
+    assert.equal(result.permanentlyFailed, 1);
+    assert.equal(listMemoryOutbox()[0]?.deliveryStatus, "failed");
+  });
+
   test("backoff keeps a recently failed event ineligible until next_attempt_at", async () => {
     enqueueSample("ord-backoff");
     const t0 = new Date("2026-09-12T21:00:00.000Z");
@@ -214,6 +227,7 @@ describe("processor security contract", () => {
         const p = join(dir, name.name);
         if (name.isDirectory()) walk(p);
         else if (name.name.endsWith(".tsx") || name.name.endsWith(".ts")) {
+          if (p.includes(`${join("src", "routes", "api")}`)) continue;
           const text = readFileSync(p, "utf8");
           assert.equal(text.includes("processTransactionalEmailOutbox"), false, p);
         }

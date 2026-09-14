@@ -2,7 +2,7 @@
 
 Independent production path: **GitHub → Vercel → TanStack Start + Nitro → Supabase**. Lovable is not required to build or deploy.
 
-This document prepares the path. It does **not** perform a production deploy, attach a custom domain, add Vercel Cron, or add a mail provider.
+This document prepares the path. It does **not** perform a production deploy or attach a custom domain. Transactional email Cron and the Resend driver are configured in-repo; Preview must stay capture-only.
 
 ## What the build produces
 
@@ -18,9 +18,9 @@ Nitro may still write an intermediate `.output/` directory during the build. **D
 
 Do not commit `.vercel/`, `.output/`, or `.env*`.
 
-A committed `vercel.json` is **not** required when the Vercel project framework preset is **TanStack Start**. Add one only if detection fails (`{ "framework": "tanstack-start" }`).
+`vercel.json` exists only to declare Cron. Do not set Output Directory. Leave framework detection as **TanStack Start**.
 
-There is no Vercel Cron configuration in this repo. `src/server.ts` remains a fetch adapter; it is not a scheduler.
+Vercel Cron (`*/5 * * * *`) calls `GET /api/cron/transactional-email`. Vercel invokes Cron on **Production** deployments, not Preview. `src/server.ts` remains a fetch adapter; the schedule is platform Cron, not an in-process worker.
 
 ## Environment variables
 
@@ -46,14 +46,18 @@ Set in the Vercel project for **Production** and **Preview** as appropriate. Pre
 | `SUPABASE_URL` | SSR / server functions; same project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | SSR user-scoped client; **not** service role |
 | `SUPABASE_SERVICE_ROLE_KEY` | Bypasses RLS. Server only. |
-| `MAIL_DRIVER` | Keep `capture` until a real provider is chosen |
+| `MAIL_DRIVER` | Preview: `capture`. Production: `resend` only after a verified sending domain exists |
+| `MAIL_FROM` | Required for `resend`. Verified TLB domain sender |
+| `MAIL_REPLY_TO` | Optional default Reply-To |
+| `MAIL_PROVIDER_API_KEY` | Resend API key. Production only. Never `VITE_` |
 | `CONTACT_RECIPIENT_EMAIL` | Staff inbox for `contact.submitted` |
+| `CRON_SECRET` | Bearer secret for `/api/cron/transactional-email`. Production. High entropy |
 
 Application code reads these via `process.env` (auth middleware, `client.server.ts`, mail). That works on Vercel Node functions without a Cloudflare env adapter.
 
-Do **not** set `MAIL_DRIVER=resend` (or any real sender) until a later phase implements that driver.
+Do **not** set `MAIL_DRIVER=resend` or `MAIL_PROVIDER_API_KEY` on Preview/staging.
 
-Optional leftovers (`LOVABLE_CRON_SECRET*`) are unused: there is no scheduler.
+Optional leftovers (`LOVABLE_CRON_SECRET*`) are unused by the mail processor. Use `CRON_SECRET`.
 
 ### Test-only (never on Vercel)
 
@@ -105,8 +109,8 @@ This is dashboard configuration, not an application code change.
 | Trigger | Non-production git refs / Vercel Preview | Production branch |
 | URL | `*.vercel.app` deployment URL | Production domain (later) |
 | Env | Same keys; Preview env in Vercel | Production env in Vercel |
-| Mail | `MAIL_DRIVER=capture` | Still `capture` until a provider checkpoint |
-| Cron | None | None |
+| Mail | `MAIL_DRIVER=capture`. No provider API key | `MAIL_DRIVER=resend` only after domain verification |
+| Cron | Not invoked by Vercel | `*/5 * * * *` → `/api/cron/transactional-email` with `CRON_SECRET` |
 
 ## Runbook (first preview — not executed in CP27 Phase 3C)
 
@@ -151,4 +155,4 @@ In Vercel: promote/restore a previous deployment, or redeploy a known-good git S
 2. Set Vercel env vars (build-time `VITE_*`, runtime server secrets) without putting them in git.
 3. Deploy a **Preview** only.
 4. Add the preview origin to Supabase Auth allow-lists.
-5. Production, custom domain, cron, and a real mail provider remain later checkpoints.
+5. Production cutover: verified Resend domain, Production-only `MAIL_DRIVER=resend`, `MAIL_FROM`, `MAIL_PROVIDER_API_KEY`, `CRON_SECRET`, `CONTACT_RECIPIENT_EMAIL`. Keep Preview on `capture`.

@@ -24,6 +24,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedExperimentsRouteImport } from './routes/_authenticated/experiments'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as ApiCronTransactionalEmailRouteImport } from './routes/api/cron/transactional-email'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -100,6 +101,12 @@ const ProductIdRoute = ProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronTransactionalEmailRoute =
+  ApiCronTransactionalEmailRouteImport.update({
+    id: '/api/cron/transactional-email',
+    path: '/api/cron/transactional-email',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/api/cron/transactional-email': typeof ApiCronTransactionalEmailRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -132,6 +140,7 @@ export interface FileRoutesByTo {
   '/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/api/cron/transactional-email': typeof ApiCronTransactionalEmailRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -150,6 +159,7 @@ export interface FileRoutesById {
   '/_authenticated/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/api/cron/transactional-email': typeof ApiCronTransactionalEmailRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/experiments'
     | '/blog/$slug'
     | '/product/$id'
+    | '/api/cron/transactional-email'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/experiments'
     | '/blog/$slug'
     | '/product/$id'
+    | '/api/cron/transactional-email'
   id:
     | '__root__'
     | '/'
@@ -201,6 +213,7 @@ export interface FileRouteTypes {
     | '/_authenticated/experiments'
     | '/blog/$slug'
     | '/product/$id'
+    | '/api/cron/transactional-email'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -215,6 +228,7 @@ export interface RootRouteChildren {
   QuoteRoute: typeof QuoteRoute
   ShopRoute: typeof ShopRoute
   ProductIdRoute: typeof ProductIdRoute
+  ApiCronTransactionalEmailRoute: typeof ApiCronTransactionalEmailRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -324,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/transactional-email': {
+      id: '/api/cron/transactional-email'
+      path: '/api/cron/transactional-email'
+      fullPath: '/api/cron/transactional-email'
+      preLoaderRoute: typeof ApiCronTransactionalEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -364,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   QuoteRoute: QuoteRoute,
   ShopRoute: ShopRoute,
   ProductIdRoute: ProductIdRoute,
+  ApiCronTransactionalEmailRoute: ApiCronTransactionalEmailRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
