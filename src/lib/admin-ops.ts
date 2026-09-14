@@ -2,6 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { Constants } from "@/integrations/supabase/types";
+import {
+  assertValidOrderTransition,
+  assertValidQuoteTransition,
+} from "@/lib/commerce-status";
 import { loadStaffAccess } from "@/lib/staff";
 
 const ORDER_STATUSES = Constants.public.Enums.order_status;
@@ -64,10 +68,13 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       return { reference: existing.reference, status: existing.status };
     }
 
+    assertValidOrderTransition(existing.status, data.status);
+
     const { data: row, error } = await supabaseAdmin
       .from("orders")
       .update({ status: data.status })
       .eq("id", data.orderId)
+      .eq("status", existing.status)
       .select("id, reference, status, shipping_email")
       .maybeSingle();
 
@@ -76,7 +83,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       throw new Error("Could not update order status");
     }
     if (!row) {
-      throw new Error("Order not found");
+      throw new Error("Could not update order status");
     }
 
     const result = { reference: row.reference, status: row.status };
@@ -91,6 +98,80 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
         shippingEmail: row.shipping_email,
         previousStatus: existing.status,
         nextStatus: row.status,
+      }),
+    );
+  });
+
+const cancelOrderSchema = z.object({
+  orderId: z.string().uuid(),
+});
+
+export const cancelOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: unknown) => cancelOrderSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    await loadStaffAccess(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: existing, error: loadError } = await supabaseAdmin
+      .from("orders")
+      .select("id, reference, status, shipping_email")
+      .eq("id", data.orderId)
+      .maybeSingle();
+
+    if (loadError) {
+      console.error("[cancelOrder]", loadError.message);
+      throw new Error("Could not cancel order");
+    }
+    if (!existing) {
+      throw new Error("Order not found");
+    }
+
+    const previousStatus = existing.status;
+
+    const { data: payload, error } = await supabaseAdmin.rpc("cancel_order_and_restore_stock", {
+      p_order_id: data.orderId,
+    });
+
+    if (error) {
+      console.error("[cancelOrder]", error.message);
+      const lower = error.message.toLowerCase();
+      if (lower.includes("cannot be cancelled")) throw new Error("This order cannot be cancelled");
+      if (lower.includes("not found")) throw new Error("Order not found");
+      throw new Error("Could not cancel order");
+    }
+
+    const result = payload as {
+      order_id?: string;
+      reference?: string;
+      status?: string;
+      replayed?: boolean;
+    } | null;
+
+    if (!result?.order_id || result.status !== "cancelled") {
+      throw new Error("Could not cancel order");
+    }
+
+    const cancelled = {
+      reference: String(result.reference ?? existing.reference),
+      status: "cancelled" as const,
+    };
+
+    if (result.replayed || previousStatus === "cancelled") {
+      return cancelled;
+    }
+
+    const { enqueueOrderLifecycleFromTransition, notifyAfterCommerceCommit } = await import(
+      "@/server/mail/commerce"
+    );
+
+    return notifyAfterCommerceCommit(cancelled, () =>
+      enqueueOrderLifecycleFromTransition({
+        id: String(result.order_id),
+        reference: cancelled.reference,
+        shippingEmail: existing.shipping_email,
+        previousStatus,
+        nextStatus: "cancelled",
       }),
     );
   });
@@ -120,10 +201,13 @@ export const updateQuoteStatus = createServerFn({ method: "POST" })
       return { reference: existing.reference, status: existing.status };
     }
 
+    assertValidQuoteTransition(existing.status, data.status);
+
     const { data: row, error } = await supabaseAdmin
       .from("quotes")
       .update({ status: data.status })
       .eq("id", data.quoteId)
+      .eq("status", existing.status)
       .select("id, reference, status, contact_email")
       .maybeSingle();
 
@@ -132,7 +216,7 @@ export const updateQuoteStatus = createServerFn({ method: "POST" })
       throw new Error("Could not update quote status");
     }
     if (!row) {
-      throw new Error("Quote not found");
+      throw new Error("Could not update quote status");
     }
 
     const result = { reference: row.reference, status: row.status };

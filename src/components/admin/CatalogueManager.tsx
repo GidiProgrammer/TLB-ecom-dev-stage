@@ -6,6 +6,7 @@ import {
   listAdminProducts,
   restoreProduct,
   softDeleteProduct,
+  staffRestockProduct,
   upsertCategory,
   upsertProduct,
   type AdminCatalogCategory,
@@ -99,6 +100,8 @@ function ProductEditor({
 }) {
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
+  const [restockQty, setRestockQty] = useState("1");
+  const [restockNote, setRestockNote] = useState("");
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -128,10 +131,12 @@ function ProductEditor({
         image_url: "",
         is_active: true,
       });
-      setReason("");
-      return;
-    }
-    setForm({
+    setReason("");
+    setRestockQty("1");
+    setRestockNote("");
+    return;
+  }
+  setForm({
       name: selected.name,
       slug: selected.slug,
       sku: selected.sku ?? "",
@@ -145,6 +150,8 @@ function ProductEditor({
       is_active: selected.is_active,
     });
     setReason("");
+    setRestockQty("1");
+    setRestockNote("");
   }, [selected]);
 
   const save = async () => {
@@ -188,6 +195,24 @@ function ProductEditor({
       await onSaved();
     } catch (error) {
       toast.error(mutationMessage(error, "Could not remove product"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const restock = async () => {
+    if (!selected) return;
+    const quantity = Number(restockQty);
+    setBusy(true);
+    try {
+      const result = await staffRestockProduct({
+        data: { productId: selected.id, quantity, note: restockNote },
+      });
+      toast.success(`Stock is now ${result.stockQuantity}`);
+      setRestockNote("");
+      await onSaved();
+    } catch (error) {
+      toast.error(mutationMessage(error, "Could not restock product"));
     } finally {
       setBusy(false);
     }
@@ -314,6 +339,48 @@ function ProductEditor({
               {busy ? "Saving…" : selected ? "Save product" : "Create product"}
             </Button>
           </div>
+          {selected && !selected.deleted_at ? (
+            <div className="rounded-md border border-border p-4">
+              <p className="text-sm font-medium">Increase sellable stock</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                This adds quantity on the shop. It is not warehouse receiving.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-[8rem_1fr_auto]">
+                <div>
+                  <Label htmlFor="p-restock-qty">Quantity</Label>
+                  <Input
+                    id="p-restock-qty"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={restockQty}
+                    onChange={(e) => setRestockQty(e.target.value)}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="p-restock-note">Reason</Label>
+                  <Input
+                    id="p-restock-note"
+                    value={restockNote}
+                    onChange={(e) => setRestockNote(e.target.value)}
+                    placeholder="e.g. supplier delivery"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy || restockNote.trim().length < 3}
+                    onClick={() => void restock()}
+                  >
+                    Add stock
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
           {selected && !selected.deleted_at ? (
             <div className="rounded-md border border-border p-4">
               <Label htmlFor="p-reason">Remove from shop (soft delete)</Label>

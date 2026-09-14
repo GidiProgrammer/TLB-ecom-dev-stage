@@ -89,6 +89,12 @@ const restoreSchema = z.object({
   productId: z.string().uuid(),
 });
 
+const restockSchema = z.object({
+  productId: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  note: z.string().trim().min(3).max(240),
+});
+
 function parseImageUrl(value: string | null | undefined) {
   const url = emptyToNull(value ?? null);
   if (!url) return null;
@@ -330,4 +336,32 @@ export const upsertCategory = createServerFn({ method: "POST" })
     }
     if (!row) throw new Error("Could not create category");
     return row;
+  });
+
+export const staffRestockProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: unknown) => restockSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    await loadStaffAccess(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: payload, error } = await supabaseAdmin.rpc("staff_restock_product", {
+      p_product_id: data.productId,
+      p_qty: data.quantity,
+      p_note: data.note,
+      p_staff_user_id: context.userId,
+    });
+    if (error) {
+      console.error("[staffRestockProduct]", error.message);
+      const lower = error.message.toLowerCase();
+      if (lower.includes("unauthorized")) throw new Error("Unauthorized");
+      if (lower.includes("invalid quantity")) throw new Error("Enter a whole number greater than zero");
+      if (lower.includes("not found")) throw new Error("Product not found");
+      if (lower.includes("note")) throw new Error("Enter a restock reason");
+      throw new Error("Could not restock product");
+    }
+    const result = payload as { product_id?: string; stock_quantity?: number } | null;
+    if (!result?.product_id || typeof result.stock_quantity !== "number") {
+      throw new Error("Could not restock product");
+    }
+    return { productId: result.product_id, stockQuantity: result.stock_quantity };
   });

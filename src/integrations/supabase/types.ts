@@ -1888,6 +1888,10 @@ export type Database = {
         Args: { _order_id: string; _product_id: string; _qty: number }
         Returns: undefined
       }
+      cancel_order_and_restore_stock: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1898,6 +1902,15 @@ export type Database = {
       restock_product: {
         Args: { _note?: string; _product_id: string; _qty: number }
         Returns: undefined
+      }
+      staff_restock_product: {
+        Args: {
+          p_note: string
+          p_product_id: string
+          p_qty: number
+          p_staff_user_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {

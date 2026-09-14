@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "test:unit": "node --experimental-strip-types --test src/server/mail/*.test.ts src/server/commerce/*.test.ts src/lib/commerce-nonce.test.ts",
+    "test:unit": "node --experimental-strip-types --test src/server/mail/*.test.ts src/server/commerce/*.test.ts src/lib/commerce-nonce.test.ts src/lib/commerce-status.test.ts",
     "test:e2e": "playwright test"
   },
   "overrides": {

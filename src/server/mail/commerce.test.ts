@@ -170,6 +170,8 @@ describe("client / security contract", () => {
     assert.match(adminOps, /requireSupabaseAuth/);
     assert.match(adminOps, /loadStaffAccess/);
     assert.match(adminOps, /enqueueOrderLifecycleFromTransition/);
+    assert.match(adminOps, /export const cancelOrder/);
+    assert.match(adminOps, /cancel_order_and_restore_stock/);
     assert.match(adminOps, /enqueueQuoteLifecycleFromTransition/);
     assert.match(adminOps, /notifyAfterCommerceCommit/);
     assert.match(adminOps, /previousStatus: existing\.status/);
@@ -192,6 +194,7 @@ describe("client / security contract", () => {
     assert.equal(adminRoute.includes("transactional_email_outbox"), false);
     assert.equal(adminRoute.includes("SUPABASE_SERVICE_ROLE_KEY"), false);
     assert.match(adminRoute, /updateOrderStatus/);
+    assert.match(adminRoute, /cancelOrder/);
     assert.match(adminRoute, /updateQuoteStatus/);
   });
 

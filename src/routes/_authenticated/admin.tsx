@@ -6,9 +6,16 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { formatGHS } from "@/lib/catalog-utils";
 import { Constants } from "@/integrations/supabase/types";
+import {
+  allowedOrderTransitions,
+  allowedQuoteTransitions,
+  isOrderCancellable,
+  isTerminalOrderStatus,
+  isTerminalQuoteStatus,
+} from "@/lib/commerce-status";
 import { listAdminProducts } from "@/lib/catalog-ops";
 import { useAdminOrders, useAdminQuotes, useAdminProfiles, type AdminOrder, type AdminQuote, type AdminProfile } from "@/lib/queries/admin";
-import { updateOrderStatus, updateQuoteItemPrice, updateQuoteStatus, updateProfileApproval } from "@/lib/admin-ops";
+import { updateOrderStatus, updateQuoteItemPrice, updateQuoteStatus, updateProfileApproval, cancelOrder } from "@/lib/admin-ops";
 import { requireStaffAccess } from "@/lib/staff";
 import { CatalogueManager } from "@/components/admin/CatalogueManager";
 import { Badge } from "@/components/ui/badge";
@@ -169,6 +176,9 @@ function OrderList({ orders }: { orders: AdminOrder[] }) {
 function OrderRow({ order }: { order: AdminOrder }) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const nextStatuses = allowedOrderTransitions(order.status);
+  const terminal = isTerminalOrderStatus(order.status);
+  const cancellable = isOrderCancellable(order.status);
 
   const saveStatus = async (status: (typeof ORDER_STATUSES)[number]) => {
     if (status === order.status) return;
@@ -179,6 +189,19 @@ function OrderRow({ order }: { order: AdminOrder }) {
       toast.success(`Order ${order.reference} updated`);
     } catch (error) {
       toast.error(mutationMessage(error, "Could not update order status"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cancel = async () => {
+    setBusy(true);
+    try {
+      await cancelOrder({ data: { orderId: order.id } });
+      await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      toast.success(`Order ${order.reference} cancelled`);
+    } catch (error) {
+      toast.error(mutationMessage(error, "Could not cancel order"));
     } finally {
       setBusy(false);
     }
@@ -197,18 +220,36 @@ function OrderRow({ order }: { order: AdminOrder }) {
           {order.order_items.length} {order.order_items.length === 1 ? "line" : "lines"} ·{" "}
           {formatGHS(Number(order.total))}
         </span>
-        <Select value={order.status} onValueChange={(value) => void saveStatus(value as (typeof ORDER_STATUSES)[number])} disabled={busy}>
-          <SelectTrigger className="h-8 w-44 text-xs" aria-label={`Status for ${order.reference}`}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ORDER_STATUSES.map((status) => (
-              <SelectItem key={status} value={status} className="capitalize">
-                {status.replaceAll("_", " ")}
+        {terminal ? (
+          <span className="text-xs font-medium capitalize text-muted-foreground">
+            {order.status.replaceAll("_", " ")} · closed
+          </span>
+        ) : (
+          <Select
+            value={order.status}
+            onValueChange={(value) => void saveStatus(value as (typeof ORDER_STATUSES)[number])}
+            disabled={busy || nextStatuses.length === 0}
+          >
+            <SelectTrigger className="h-8 w-44 text-xs" aria-label={`Status for ${order.reference}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={order.status} className="capitalize">
+                {order.status.replaceAll("_", " ")}
               </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              {nextStatuses.map((status) => (
+                <SelectItem key={status} value={status} className="capitalize">
+                  {status.replaceAll("_", " ")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {cancellable ? (
+          <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void cancel()}>
+            Cancel order
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -235,6 +276,8 @@ function QuoteList({ quotes }: { quotes: AdminQuote[] }) {
 function QuoteRow({ quote }: { quote: AdminQuote }) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const nextStatuses = allowedQuoteTransitions(quote.status);
+  const terminal = isTerminalQuoteStatus(quote.status);
 
   const saveStatus = async (status: (typeof QUOTE_STATUSES)[number]) => {
     if (status === quote.status) return;
@@ -263,22 +306,31 @@ function QuoteRow({ quote }: { quote: AdminQuote }) {
           <span className="text-xs text-muted-foreground">
             {quote.quote_items.length} {quote.quote_items.length === 1 ? "item" : "items"}
           </span>
-          <Select
-            value={quote.status}
-            onValueChange={(value) => void saveStatus(value as (typeof QUOTE_STATUSES)[number])}
-            disabled={busy}
-          >
-            <SelectTrigger className="h-8 w-40 text-xs" aria-label={`Status for ${quote.reference}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {QUOTE_STATUSES.map((status) => (
-                <SelectItem key={status} value={status} className="capitalize">
-                  {status}
+          {terminal ? (
+            <span className="text-xs font-medium capitalize text-muted-foreground">
+              {quote.status} · closed
+            </span>
+          ) : (
+            <Select
+              value={quote.status}
+              onValueChange={(value) => void saveStatus(value as (typeof QUOTE_STATUSES)[number])}
+              disabled={busy || nextStatuses.length === 0}
+            >
+              <SelectTrigger className="h-8 w-40 text-xs" aria-label={`Status for ${quote.reference}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={quote.status} className="capitalize">
+                  {quote.status}
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {nextStatuses.map((status) => (
+                  <SelectItem key={status} value={status} className="capitalize">
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
       <ul className="mt-3 space-y-2">
