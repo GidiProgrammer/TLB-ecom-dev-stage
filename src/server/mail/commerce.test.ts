@@ -169,7 +169,9 @@ describe("client / security contract", () => {
 
   test("admin lifecycle mutations remain staff-gated and do not enqueue from routes", () => {
     const adminOps = readFileSync(resolve(root, "src/lib/admin-ops.ts"), "utf8");
-    const adminRoute = readFileSync(resolve(root, "src/routes/_authenticated/admin.tsx"), "utf8");
+    const adminOrders = readFileSync(resolve(root, "src/components/admin/OrderWorkspace.tsx"), "utf8");
+    const adminQuotes = readFileSync(resolve(root, "src/components/admin/QuoteWorkspace.tsx"), "utf8");
+    const adminRoute = adminOrders + adminQuotes;
 
     assert.match(adminOps, /requireSupabaseAuth/);
     assert.match(adminOps, /loadStaffAccess/);

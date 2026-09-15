@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { COMPANY } from "@/lib/catalog-utils";
 import { useCategories } from "@/lib/queries/products";
+import { BrandLogo } from "@/components/site/BrandLogo";
 import { CommerceExplainer } from "@/components/site/CommerceExplainer";
 
 export function Footer() {
@@ -11,10 +12,8 @@ export function Footer() {
     <footer className="mt-20 border-t-4 border-gold bg-neutral-900 text-neutral-50">
       <div className="container-page grid gap-10 py-14 md:grid-cols-4">
         <div>
-          <p className="text-lg font-semibold text-primary-foreground">TLB Enterprise</p>
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-gold">
-            Laboratory supplies
-          </p>
+          <BrandLogo className="h-16" />
+          <p className="sr-only">TLB Enterprise</p>
           <p className="mt-4 text-sm text-neutral-400">
             Supplier of laboratory chemicals, equipment, glassware and safety products to institutions,
             industry and healthcare across Ghana.

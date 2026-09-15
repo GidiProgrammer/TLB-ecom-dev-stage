@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -88,7 +89,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Laboratory chemicals, equipment, glassware and safety supplies for institutions and industry across Ghana.",
       },
-      { property: "og:type", content: "website" },
+      { property: "og:image", content: "/favicon.png" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
@@ -102,7 +103,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -127,22 +130,34 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <StoreProvider>
-          <div className="flex min-h-screen flex-col">
-            <a href="#main-content" className="skip-link">
-              Skip to content
-            </a>
-            <Header />
-            <main id="main-content" className="flex-1" tabIndex={-1}>
-              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-              <Outlet />
-            </main>
-            <Footer />
-          </div>
+          {isAdmin ? (
+            <>
+              <a href="#main-content" className="skip-link">
+                Skip to content
+              </a>
+              <main id="main-content" className="min-h-screen" tabIndex={-1}>
+                <Outlet />
+              </main>
+            </>
+          ) : (
+            <div className="flex min-h-screen flex-col">
+              <a href="#main-content" className="skip-link">
+                Skip to content
+              </a>
+              <Header />
+              <main id="main-content" className="flex-1" tabIndex={-1}>
+                <Outlet />
+              </main>
+              <Footer />
+            </div>
+          )}
           <Toaster richColors position="top-right" />
         </StoreProvider>
       </AuthProvider>

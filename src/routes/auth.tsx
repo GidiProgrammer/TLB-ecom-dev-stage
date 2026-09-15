@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FlaskConical } from "lucide-react";
+import { BrandLogo } from "@/components/site/BrandLogo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -135,7 +135,7 @@ function AuthPage() {
   return (
     <div className="container-page grid gap-10 py-12 lg:grid-cols-[1fr_1.1fr]">
       <div className="hidden rounded-lg bg-primary p-10 text-primary-foreground lg:block">
-        <FlaskConical className="h-8 w-8" />
+        <BrandLogo className="h-16" />
         <h1 className="mt-6 font-display text-3xl font-extrabold leading-tight">
           Accounts built for laboratories
         </h1>

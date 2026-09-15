@@ -12,11 +12,21 @@ import {
   type AdminCatalogCategory,
   type AdminCatalogProduct,
 } from "@/lib/catalog-ops";
+import { formatGHS } from "@/lib/catalog-utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AdminEmpty, AdminPanel, AdminSearch } from "@/components/admin/AdminPageHeader";
+import { StatusBadge, catalogStatusTone } from "@/components/admin/StatusBadge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function mutationMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
@@ -28,20 +38,16 @@ function productStatus(product: AdminCatalogProduct) {
   return "Active";
 }
 
-export function CatalogueManager({ canRestore }: { canRestore: boolean }) {
+export function ProductCatalogue({ canRestore }: { canRestore: boolean }) {
   const queryClient = useQueryClient();
   const products = useQuery({ queryKey: ["admin-catalogue"], queryFn: () => listAdminProducts() });
   const categories = useQuery({ queryKey: ["admin-categories"], queryFn: () => listAdminCategories() });
   const [selectedId, setSelectedId] = useState<string>("new");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("new");
+  const [q, setQ] = useState("");
 
   const selected = useMemo(
     () => (products.data ?? []).find((p) => p.id === selectedId) ?? null,
     [products.data, selectedId],
-  );
-  const selectedCategory = useMemo(
-    () => (categories.data ?? []).find((c) => c.id === selectedCategoryId) ?? null,
-    [categories.data, selectedCategoryId],
   );
 
   const refresh = async () => {
@@ -51,32 +57,168 @@ export function CatalogueManager({ canRestore }: { canRestore: boolean }) {
     ]);
   };
 
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const list = products.data ?? [];
+    if (!term) return list;
+    return list.filter((p) =>
+      [p.name, p.sku ?? "", p.slug, productStatus(p), p.category_name ?? ""].join(" ").toLowerCase().includes(term),
+    );
+  }, [products.data, q]);
+
+  if (products.isLoading || categories.isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading catalogue…</p>;
+  }
+  if (products.error || categories.error) {
+    return <p className="text-sm text-muted-foreground">Could not load the catalogue. Please try again.</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <AdminPanel>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <AdminSearch value={q} onChange={setQ} label="Search products" />
+          <Button type="button" variant="outline" size="sm" onClick={() => setSelectedId("new")}>
+            New product
+          </Button>
+        </div>
+        {(products.data ?? []).length === 0 ? (
+          <AdminEmpty>No products in the catalogue.</AdminEmpty>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead className="hidden sm:table-cell">SKU</TableHead>
+                <TableHead className="hidden md:table-cell">Category</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Stock</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((product) => (
+                <TableRow key={product.id} data-state={selectedId === product.id ? "selected" : undefined}>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{product.sku ?? "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{product.category_name ?? "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatGHS(Number(product.price))}</TableCell>
+                  <TableCell className="text-right tabular-nums">{product.stock_quantity}</TableCell>
+                  <TableCell>
+                    <StatusBadge tone={catalogStatusTone(productStatus(product))}>
+                      {productStatus(product)}
+                    </StatusBadge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setSelectedId(product.id)}>
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </AdminPanel>
+      <ProductEditor
+        products={products.data ?? []}
+        categories={categories.data ?? []}
+        selectedId={selectedId}
+        selected={selected}
+        onSelect={setSelectedId}
+        canRestore={canRestore}
+        onSaved={refresh}
+      />
+    </div>
+  );
+}
+
+export function CategoryCatalogue() {
+  const queryClient = useQueryClient();
+  const categories = useQuery({ queryKey: ["admin-categories"], queryFn: () => listAdminCategories() });
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("new");
+  const [q, setQ] = useState("");
+
+  const selectedCategory = useMemo(
+    () => (categories.data ?? []).find((c) => c.id === selectedCategoryId) ?? null,
+    [categories.data, selectedCategoryId],
+  );
+
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+  };
+
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const list = categories.data ?? [];
+    if (!term) return list;
+    return list.filter((c) => [c.name, c.slug, c.description ?? ""].join(" ").toLowerCase().includes(term));
+  }, [categories.data, q]);
+
+  if (categories.isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading catalogue…</p>;
+  }
+  if (categories.error) {
+    return <p className="text-sm text-muted-foreground">Could not load the catalogue. Please try again.</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <AdminPanel>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <AdminSearch value={q} onChange={setQ} label="Search categories" />
+          <Button type="button" variant="outline" size="sm" onClick={() => setSelectedCategoryId("new")}>
+            New category
+          </Button>
+        </div>
+        {(categories.data ?? []).length === 0 ? (
+          <AdminEmpty>No categories yet.</AdminEmpty>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead className="hidden md:table-cell">Description</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((category) => (
+                <TableRow key={category.id}>
+                  <TableCell className="font-medium">{category.name}</TableCell>
+                  <TableCell>{category.slug}</TableCell>
+                  <TableCell className="hidden max-w-sm truncate md:table-cell">
+                    {category.description ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setSelectedCategoryId(category.id)}>
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </AdminPanel>
+      <CategoryEditor
+        categories={categories.data ?? []}
+        selectedId={selectedCategoryId}
+        selected={selectedCategory}
+        onSelect={setSelectedCategoryId}
+        onSaved={refresh}
+      />
+    </div>
+  );
+}
+
+export function CatalogueManager({ canRestore }: { canRestore: boolean }) {
   return (
     <div className="space-y-8">
-      {products.isLoading || categories.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading catalogue…</p>
-      ) : products.error || categories.error ? (
-        <p className="text-sm text-muted-foreground">Could not load the catalogue. Please try again.</p>
-      ) : (
-        <>
-          <ProductEditor
-            products={products.data ?? []}
-            categories={categories.data ?? []}
-            selectedId={selectedId}
-            selected={selected}
-            onSelect={setSelectedId}
-            canRestore={canRestore}
-            onSaved={refresh}
-          />
-          <CategoryEditor
-            categories={categories.data ?? []}
-            selectedId={selectedCategoryId}
-            selected={selectedCategory}
-            onSelect={setSelectedCategoryId}
-            onSaved={refresh}
-          />
-        </>
-      )}
+      <ProductCatalogue canRestore={canRestore} />
+      <CategoryCatalogue />
     </div>
   );
 }
@@ -233,46 +375,37 @@ function ProductEditor({
   };
 
   return (
-    <section>
-      <h2 className="font-display text-lg font-bold">Products</h2>
+    <AdminPanel className="p-5">
+      <h2 className="text-base font-semibold">{selected ? "Edit product" : "New product"}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Includes inactive and removed products. Stock quantity is shown for reference and cannot be changed here.
       </p>
-      <div className="mt-4 grid gap-6 lg:grid-cols-[18rem_1fr]">
-        <label className="block text-sm">
-          <span className="text-xs uppercase tracking-wide text-muted-foreground">Select product</span>
-          <select
-            className="mt-1.5 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-            aria-label="Select product"
-            value={selectedId}
-            onChange={(e) => onSelect(e.target.value)}
-          >
-            <option value="new">New product</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name} ({productStatus(product)})
-              </option>
-            ))}
-          </select>
-        </label>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void save();
-          }}
-        >
-          {selected ? (
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <Badge variant="secondary">{productStatus(selected)}</Badge>
-              <span className="text-muted-foreground">
-                Stock on hand: {selected.stock_quantity} (not editable here)
-              </span>
-              {selected.deleted_reason ? (
-                <span className="text-muted-foreground">Removed: {selected.deleted_reason}</span>
-              ) : null}
-            </div>
-          ) : null}
+      <form
+        className="mt-4 space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+      >
+        <select className="sr-only" aria-label="Select product" value={selectedId} onChange={(e) => onSelect(e.target.value)}>
+          <option value="new">New product</option>
+          {products.map((product) => (
+            <option key={product.id} value={product.id}>
+              {product.name} ({productStatus(product)})
+            </option>
+          ))}
+        </select>
+        {selected ? (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <StatusBadge tone={catalogStatusTone(productStatus(selected))}>{productStatus(selected)}</StatusBadge>
+            <span className="text-muted-foreground">
+              Stock on hand: {selected.stock_quantity} (not editable here)
+            </span>
+            {selected.deleted_reason ? (
+              <span className="text-muted-foreground">Removed: {selected.deleted_reason}</span>
+            ) : null}
+          </div>
+        ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="p-name" label="Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} required />
             <Field id="p-slug" label="Slug" value={form.slug} onChange={(v) => setForm((f) => ({ ...f, slug: v }))} required />
@@ -335,9 +468,9 @@ function ProductEditor({
             </label>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={busy || Boolean(selected?.deleted_at)} className="bg-accent text-accent-foreground hover:bg-accent/90">
-              {busy ? "Saving…" : selected ? "Save product" : "Create product"}
-            </Button>
+          <Button type="submit" disabled={busy || Boolean(selected?.deleted_at)}>
+            {busy ? "Saving…" : selected ? "Save product" : "Create product"}
+          </Button>
           </div>
           {selected && !selected.deleted_at ? (
             <div className="rounded-md border border-border p-4">
@@ -401,12 +534,11 @@ function ProductEditor({
               Restore product
             </Button>
           ) : null}
-          {selected?.deleted_at && !canRestore ? (
-            <p className="text-xs text-muted-foreground">Only an admin can restore a removed product.</p>
-          ) : null}
-        </form>
-      </div>
-    </section>
+        {selected?.deleted_at && !canRestore ? (
+          <p className="text-xs text-muted-foreground">Only an admin can restore a removed product.</p>
+        ) : null}
+      </form>
+    </AdminPanel>
   );
 }
 
@@ -456,33 +588,26 @@ function CategoryEditor({
   };
 
   return (
-    <section>
-      <h2 className="font-display text-lg font-bold">Categories</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Create or rename categories. Products are not deleted when a category is edited.</p>
-      <div className="mt-4 grid gap-6 lg:grid-cols-[18rem_1fr]">
-        <label className="block text-sm">
-          <span className="text-xs uppercase tracking-wide text-muted-foreground">Select category</span>
-          <select
-            className="mt-1.5 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm"
-            aria-label="Select category"
-            value={selectedId}
-            onChange={(e) => onSelect(e.target.value)}
-          >
-            <option value="new">New category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void save();
-          }}
-        >
+    <AdminPanel className="p-5">
+      <h2 className="text-base font-semibold">{selected ? "Edit category" : "New category"}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Create or rename categories. Products are not deleted when a category is edited.
+      </p>
+      <select className="sr-only" aria-label="Select category" value={selectedId} onChange={(e) => onSelect(e.target.value)}>
+        <option value="new">New category</option>
+        {categories.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </select>
+      <form
+        className="mt-4 space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void save();
+        }}
+      >
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="c-name" label="Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} required />
             <Field id="c-slug" label="Slug" value={form.slug} onChange={(v) => setForm((f) => ({ ...f, slug: v }))} required />
@@ -496,12 +621,11 @@ function CategoryEditor({
               />
             </div>
           </div>
-          <Button type="submit" disabled={busy} className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button type="submit" disabled={busy}>
             {busy ? "Saving…" : selected ? "Save category" : "Create category"}
           </Button>
         </form>
-      </div>
-    </section>
+    </AdminPanel>
   );
 }
 

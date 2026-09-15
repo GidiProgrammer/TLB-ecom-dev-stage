@@ -5,6 +5,7 @@ import { COMPANY } from "@/lib/catalog-utils";
 import { useCategories } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
+import { BrandLogo } from "@/components/site/BrandLogo";
 import { CommerceExplainer } from "@/components/site/CommerceExplainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +90,7 @@ export function Header() {
             <SheetTitle className="absolute h-px w-px overflow-hidden whitespace-nowrap p-0 [clip:rect(0,0,0,0)]">
               Menu
             </SheetTitle>
+            <BrandLogo className="h-12" />
             <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Categories
             </p>
@@ -121,11 +123,8 @@ export function Header() {
           </SheetContent>
         </Sheet>
 
-        <Link to="/" className="flex min-h-11 items-center">
-          <span className="leading-tight">
-            <span className="block text-lg font-semibold tracking-tight text-primary">TLB Enterprise</span>
-            <span className="block text-[11px] font-medium text-muted-foreground">Laboratory supplies, Accra</span>
-          </span>
+        <Link to="/" className="flex min-h-11 items-center gap-2">
+          <BrandLogo className="h-11" />
         </Link>
 
         <form onSubmit={submit} className="ml-2 hidden min-h-11 flex-1 items-center md:flex">

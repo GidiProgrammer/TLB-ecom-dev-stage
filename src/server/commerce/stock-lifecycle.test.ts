@@ -12,7 +12,7 @@ const sql = readFileSync(
 );
 const adminOps = readFileSync(resolve(here, "../../lib/admin-ops.ts"), "utf8");
 const catalogOps = readFileSync(resolve(here, "../../lib/catalog-ops.ts"), "utf8");
-const adminRoute = readFileSync(resolve(here, "../../routes/_authenticated/admin.tsx"), "utf8");
+const adminRoute = readFileSync(resolve(here, "../../components/admin/OrderWorkspace.tsx"), "utf8");
 const catalogueUi = readFileSync(
   resolve(here, "../../components/admin/CatalogueManager.tsx"),
   "utf8",

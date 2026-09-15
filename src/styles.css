@@ -31,6 +31,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
+  --color-deep-purple: var(--tlb-deep-purple);
   --color-neutral-50: var(--neutral-50);
   --color-neutral-100: var(--neutral-100);
   --color-neutral-200: var(--neutral-200);
@@ -68,6 +69,7 @@
 :root {
   /* Official TLB brand */
   --tlb-purple: #523784;
+  --tlb-deep-purple: #38245d;
   --tlb-gold: #f9cd5b;
   /* Official-adjacent neutrals (guide grayscale) */
   --neutral-0: #ffffff;
