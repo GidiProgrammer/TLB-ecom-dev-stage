@@ -13,7 +13,9 @@ test.describe("authenticated account", () => {
     await page.goto("/account");
     await expect(page).toHaveURL(/\/account/);
     await expect(page.getByRole("heading", { name: "Account dashboard" })).toBeVisible();
-    await expect(page.getByText(creds.email, { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Account dashboard" }).locator("xpath=..").getByText(creds.email, { exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Admin overview" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /admin/i })).toHaveCount(0);

@@ -119,7 +119,7 @@ function Home() {
       <section id="categories" className="container-page py-16">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Shop by category</h2>
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Shop by category</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Eight core ranges covering the full laboratory workflow.
             </p>
@@ -145,6 +145,7 @@ function Home() {
               key={c.slug}
               to="/shop"
               search={{ category: c.slug }}
+              aria-label={c.name}
               className="group overflow-hidden rounded-md border border-border bg-card transition-shadow hover:shadow-card"
             >
               <div className="aspect-4/3 overflow-hidden bg-secondary">
@@ -168,7 +169,7 @@ function Home() {
         <div className="container-page">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="font-display text-2xl font-extrabold sm:text-3xl">New in catalogue</h2>
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">New in catalogue</h2>
               <p className="mt-2 text-sm text-muted-foreground">Recently added laboratory supplies.</p>
             </div>
             <Link to="/shop" className="text-sm font-semibold text-primary hover:underline">
@@ -197,7 +198,7 @@ function Home() {
         <div className="rounded-lg border border-border bg-primary-soft p-8 sm:p-12">
           <div className="grid items-center gap-8 lg:grid-cols-[1.4fr_1fr]">
             <div>
-              <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                 Supply for laboratories and institutions
               </h2>
               <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
@@ -219,7 +220,7 @@ function Home() {
       </section>
 
       <section className="container-page pb-16">
-        <h2 className="font-display text-2xl font-extrabold sm:text-3xl">How ordering works</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">How ordering works</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           {[
             ["1. Browse the catalogue", "Find chemicals, glassware, equipment and consumables with Ghana cedi list prices."],
@@ -236,7 +237,7 @@ function Home() {
 
       <section className="container-page py-16">
         <div className="flex items-end justify-between gap-4">
-          <h2 className="font-display text-2xl font-extrabold sm:text-3xl">From the knowledge hub</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">From the knowledge hub</h2>
           <Link to="/blog" className="text-sm font-semibold text-primary hover:underline">
             All articles
           </Link>

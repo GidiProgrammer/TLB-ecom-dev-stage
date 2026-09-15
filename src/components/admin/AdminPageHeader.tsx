@@ -23,7 +23,7 @@ export function AdminPageHeader({
   return (
     <div className="flex shrink-0 items-center justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight text-neutral-950">{title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
         {description ? <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p> : null}
       </div>
       {action}
@@ -43,7 +43,7 @@ export function AdminPanel({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]",
+        "overflow-hidden rounded-xl bg-card shadow-card",
         fill && "flex min-h-[22rem] flex-1 flex-col",
         className,
       )}
@@ -65,10 +65,10 @@ export function AdminTable({ className, ...props }: ComponentProps<typeof Table>
   return (
     <Table
       className={cn(
-        "[&_thead_tr]:border-transparent [&_thead_tr]:bg-[#f4f6fb] [&_thead_tr]:hover:bg-[#f4f6fb]",
-        "[&_th]:h-12 [&_th]:px-5 [&_th]:text-xs [&_th]:font-medium [&_th]:text-neutral-400",
+        "[&_thead_tr]:border-transparent [&_thead_tr]:bg-admin-table [&_thead_tr]:hover:bg-admin-table",
+        "[&_th]:h-12 [&_th]:px-5 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground",
         "[&_td]:px-5 [&_td]:py-3.5 [&_td]:text-sm",
-        "[&_tbody_tr]:border-neutral-100 [&_tbody_tr]:hover:bg-[#fafbfe]",
+        "[&_tbody_tr]:border-neutral-100 [&_tbody_tr]:hover:bg-admin-row-hover",
         "[&_tbody_tr[data-state=selected]]:bg-primary-soft",
         className,
       )}
@@ -98,7 +98,7 @@ export function AdminIconButton({
       variant="ghost"
       size="icon"
       {...props}
-      className={cn("h-11 w-11 rounded-full bg-neutral-50 text-neutral-500 hover:bg-neutral-100 hover:text-foreground", className)}
+      className={cn("h-11 w-11 rounded-lg bg-muted text-muted-foreground hover:bg-neutral-100 hover:text-foreground", className)}
       aria-label={label}
       title={label}
     >
@@ -145,7 +145,7 @@ export function AdminSearch({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search"
-        className="h-11 rounded-full border-neutral-200 bg-[#f7f8fc] py-1 pr-4 pl-10 shadow-none"
+        className="h-11 rounded-lg border-neutral-200 bg-admin-table py-1 pr-4 pl-10 shadow-none"
       />
     </label>
   );
@@ -228,7 +228,7 @@ export function AdminPagination({
         <Button
           type="button"
           variant="outline"
-          className="h-11 rounded-full px-4 shadow-none"
+          className="h-11 rounded-lg px-4 shadow-none"
           disabled={page <= 1}
           onClick={() => onPage(page - 1)}
         >
@@ -245,7 +245,7 @@ export function AdminPagination({
               type="button"
               variant={token === page ? "default" : "outline"}
               className={cn(
-                "h-11 min-w-11 rounded-full px-0 shadow-none",
+                "h-11 min-w-11 rounded-lg px-0 shadow-none",
               )}
               aria-current={token === page ? "page" : undefined}
               aria-label={`Page ${token}`}
@@ -258,7 +258,7 @@ export function AdminPagination({
         <Button
           type="button"
           variant="outline"
-          className="h-11 rounded-full px-4 shadow-none"
+          className="h-11 rounded-lg px-4 shadow-none"
           disabled={page >= pageCount}
           onClick={() => onPage(page + 1)}
         >

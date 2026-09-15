@@ -58,7 +58,7 @@ export const Route = createFileRoute("/product/$id")({
 function ProductNotFound() {
   return (
     <div className="container-page py-24 text-center">
-      <h1 className="font-display text-2xl font-extrabold">Product not available</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Product not available</h1>
       <p className="mt-2 text-sm text-muted-foreground">This item may have been renamed or discontinued.</p>
       <Button asChild className="mt-6">
         <Link to="/shop">Back to shop</Link>
@@ -70,7 +70,7 @@ function ProductNotFound() {
 function ProductLoadError() {
   return (
     <div className="container-page py-24 text-center">
-      <h1 className="font-display text-2xl font-extrabold">Could not load this product</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Could not load this product</h1>
       <p className="mt-2 text-sm text-muted-foreground">Please try again shortly.</p>
       <Button asChild className="mt-6">
         <Link to="/shop">Back to shop</Link>
@@ -146,7 +146,7 @@ function ProductDetail() {
               {product.categoryName}
             </p>
           ) : null}
-          <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight">{product.name}</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight leading-tight">{product.name}</h1>
           <div className="mt-3 flex items-center gap-2">
             <Badge variant={status === "in-stock" ? "default" : "secondary"}>
               {stockLabel(product.stock_quantity, product.low_stock_threshold)}
@@ -157,7 +157,7 @@ function ProductDetail() {
           <p className="mt-5 text-sm text-muted-foreground">{product.description}</p>
 
           <div className="mt-6 flex items-baseline gap-2">
-            <span className="font-display text-3xl font-extrabold text-primary">{formatGHS(product.price)}</span>
+            <span className="text-3xl font-semibold tabular-nums tracking-tight text-primary">{formatGHS(product.price)}</span>
             <span className="text-sm text-muted-foreground">per {product.unit}</span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -269,7 +269,7 @@ function ProductDetail() {
 
       {relatedLoading ? (
         <section className="mt-14">
-          <h2 className="font-display text-xl font-extrabold">Related products</h2>
+          <h2 className="text-xl font-semibold">Related products</h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="aspect-4/3 w-full rounded-md" />
@@ -278,7 +278,7 @@ function ProductDetail() {
         </section>
       ) : related && related.length > 0 ? (
         <section className="mt-14">
-          <h2 className="font-display text-xl font-extrabold">Related products</h2>
+          <h2 className="text-xl font-semibold">Related products</h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {related.map((p) => (
               <ProductCard key={p.id} product={p} />

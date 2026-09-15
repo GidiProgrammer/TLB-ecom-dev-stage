@@ -85,7 +85,7 @@ export function QuoteWorkspace({ quotes }: { quotes: AdminQuote[] }) {
             <TableHead>Reference</TableHead>
             <TableHead className="hidden md:table-cell">Created</TableHead>
             <TableHead className="hidden sm:table-cell">Contact</TableHead>
-            <TableHead className="text-center">Items</TableHead>
+            <TableHead className="text-right">Items</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-center">Lines</TableHead>
           </TableRow>
@@ -154,7 +154,7 @@ function QuoteRow({
           {new Date(quote.created_at).toLocaleString("en-GB")}
         </TableCell>
         <TableCell className="hidden sm:table-cell">{quote.contact_name ?? "—"}</TableCell>
-        <TableCell className="text-center tabular-nums">{quote.quote_items.length}</TableCell>
+        <TableCell className="text-right tabular-nums">{quote.quote_items.length}</TableCell>
         <TableCell>
           {terminal ? (
             <StatusBadge tone={quoteStatusTone(quote.status)}>{quote.status}</StatusBadge>
@@ -164,7 +164,7 @@ function QuoteRow({
               onValueChange={(value) => void saveStatus(value as (typeof QUOTE_STATUSES)[number])}
               disabled={busy || nextStatuses.length === 0}
             >
-              <SelectTrigger className="h-9 min-h-9 w-36 rounded-full text-xs" aria-label={`Status for ${quote.reference}`}>
+              <SelectTrigger className="h-11 min-h-11 w-36 text-xs" aria-label={`Status for ${quote.reference}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -239,7 +239,7 @@ function QuoteItemPriceRow({
   };
 
   return (
-    <li className="flex flex-wrap items-center gap-2 rounded-[8px] bg-card px-3 py-2 text-sm">
+    <li className="flex flex-wrap items-center gap-2 rounded-lg bg-card px-3 py-2 text-sm">
       <span className="min-w-0 flex-1 font-medium">{item.product_name}</span>
       <span className="text-muted-foreground">× {item.quantity}</span>
       {item.quoted_price != null ? (
@@ -256,9 +256,9 @@ function QuoteItemPriceRow({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         disabled={closed || busy}
-        className="h-9 min-h-9 w-28"
+        className="h-11 min-h-11 w-28 text-right tabular-nums"
       />
-      <Button size="sm" variant="ghost" className="h-9 rounded-full" disabled={closed || busy} onClick={() => void save()}>
+      <Button size="sm" variant="ghost" disabled={closed || busy} onClick={() => void save()}>
         Save price
       </Button>
     </li>

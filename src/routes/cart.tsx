@@ -171,7 +171,7 @@ function CartPage() {
 
   return (
     <div className="container-page py-10">
-      <h1 className="font-display text-3xl font-extrabold">Your cart</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Your cart</h1>
 
       {cart.length === 0 ? (
         <div className="mt-8 rounded-md border border-dashed border-border p-12 text-center">
@@ -205,7 +205,7 @@ function CartPage() {
                 <dt className="text-muted-foreground">Delivery</dt>
                 <dd className="text-muted-foreground">Quoted separately</dd>
               </div>
-              <div className="flex justify-between border-t border-border pt-3 font-display text-base font-extrabold">
+              <div className="flex justify-between border-t border-border pt-3 text-base font-semibold">
                 <dt>Total</dt>
                 <dd className="text-primary">{formatGHS(cartSubtotal)}</dd>
               </div>

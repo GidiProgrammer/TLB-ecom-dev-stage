@@ -84,7 +84,7 @@ function Shop() {
 
       {invalidCategory ? (
         <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
-          <h1 className="font-display text-2xl font-extrabold">Category not found</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Category not found</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             That category is not in our catalogue. Browse all products or pick a listed category.
           </p>
@@ -102,7 +102,7 @@ function Shop() {
       ) : (
         <>
           <header className="mt-3">
-            <h1 className="font-display text-3xl font-extrabold">
+            <h1 className="text-3xl font-semibold tracking-tight">
               {category
                 ? category.name
                 : search.category && !categoriesReady

@@ -89,8 +89,8 @@ export function OrderWorkspace({ orders, compact }: { orders: AdminOrder[]; comp
               <TableHead>Reference</TableHead>
               <TableHead className="hidden md:table-cell">Created</TableHead>
               <TableHead className="hidden sm:table-cell">Customer</TableHead>
-              <TableHead className="text-center">Lines</TableHead>
-              <TableHead className="text-center">Total</TableHead>
+              <TableHead className="text-right">Lines</TableHead>
+              <TableHead className="text-right">Total</TableHead>
               <TableHead>Status</TableHead>
               {compact ? null : <TableHead className="text-center">Actions</TableHead>}
             </TableRow>
@@ -178,7 +178,7 @@ function OrderRow({
     <TableRow>
       <TableCell>
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#f4f6fb]">
+          <span className="flex h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-admin-table">
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
           </span>
           <AdminIdentity hint={order.order_items[0]?.product_name}>
@@ -190,8 +190,8 @@ function OrderRow({
         {new Date(order.created_at).toLocaleString("en-GB")}
       </TableCell>
       <TableCell className="hidden sm:table-cell">{order.shipping_name ?? "—"}</TableCell>
-      <TableCell className="text-center tabular-nums">{order.order_items.length}</TableCell>
-      <TableCell className="text-center tabular-nums">{formatGHS(Number(order.total))}</TableCell>
+      <TableCell className="text-right tabular-nums">{order.order_items.length}</TableCell>
+      <TableCell className="text-right tabular-nums">{formatGHS(Number(order.total))}</TableCell>
       <TableCell>
         {terminal || compact ? (
           <StatusBadge tone={orderStatusTone(order.status)}>{order.status}</StatusBadge>
@@ -201,7 +201,7 @@ function OrderRow({
             onValueChange={(value) => void saveStatus(value as (typeof ORDER_STATUSES)[number])}
             disabled={busy || nextStatuses.length === 0}
           >
-            <SelectTrigger className="h-9 min-h-9 w-40 rounded-full text-xs" aria-label={`Status for ${order.reference}`}>
+            <SelectTrigger className="h-11 min-h-11 w-40 text-xs" aria-label={`Status for ${order.reference}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -220,7 +220,7 @@ function OrderRow({
       {compact ? null : (
         <TableCell className="text-center">
           {cancellable ? (
-            <Button type="button" variant="ghost" size="sm" className="h-9 rounded-full" disabled={busy} onClick={() => void cancel()}>
+            <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => void cancel()}>
               Cancel order
             </Button>
           ) : (

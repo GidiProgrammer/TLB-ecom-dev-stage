@@ -143,7 +143,7 @@ function ProfileRow({ profile, canApprove }: { profile: AdminProfile; canApprove
             onValueChange={(value) => void saveStatus(value as (typeof APPROVAL_STATUSES)[number])}
             disabled={busy}
           >
-            <SelectTrigger className="h-9 min-h-9 w-36 rounded-full text-xs" aria-label={`Approval for ${label}`}>
+            <SelectTrigger className="h-11 min-h-11 w-36 text-xs" aria-label={`Approval for ${label}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

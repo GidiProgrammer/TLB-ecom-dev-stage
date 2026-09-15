@@ -34,14 +34,14 @@ const nav: {
 ];
 
 const navItemClass =
-  "flex min-h-11 items-center gap-3 rounded-full px-2 pr-3 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-purple";
+  "flex min-h-11 items-center gap-3 rounded-lg px-2 pr-3 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-purple";
 
 function IconTile({ icon: Icon, active }: { icon: LucideIcon; active?: boolean }) {
   return (
     <span
       className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
-        active ? "border-white/25 bg-white/10 text-white" : "border-white/15 bg-transparent text-white/70",
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+        active ? "border-gold/50 bg-gold/15 text-gold" : "border-white/15 bg-transparent text-white/70",
       )}
       aria-hidden
     >
@@ -73,7 +73,7 @@ function AdminNavItem({
       aria-current={active ? "page" : undefined}
       className={cn(
         navItemClass,
-        active ? "bg-primary text-white shadow-sm" : "text-white/70 hover:bg-white/8 hover:text-white",
+        active ? "bg-white/12 text-white" : "text-white/70 hover:bg-white/8 hover:text-white",
       )}
     >
       <IconTile icon={icon} active={active} />
@@ -122,7 +122,7 @@ function FooterLink({
     <Link
       to={to}
       onClick={onNavigate}
-      className="flex min-h-11 items-center gap-2 rounded-full px-1 text-xs font-medium text-white/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+      className="flex min-h-11 items-center gap-2 rounded-lg px-1 text-xs font-medium text-white/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
     >
       <IconTile icon={icon} />
       {children}
@@ -135,7 +135,7 @@ function AdminSidebarFooter({ onNavigate }: { onNavigate?: (() => void) | undefi
   const email = user?.email ?? "Staff";
 
   return (
-    <div className="shrink-0 rounded-2xl bg-white/6 p-2">
+    <div className="shrink-0 rounded-xl bg-white/6 p-2">
       <p className="truncate px-2 py-1.5 text-sm font-medium text-white" title={email}>
         {email}
       </p>
@@ -148,7 +148,7 @@ function AdminSidebarFooter({ onNavigate }: { onNavigate?: (() => void) | undefi
         </FooterLink>
         <button
           type="button"
-          className="flex min-h-11 w-full items-center gap-2 rounded-full px-1 text-left text-xs font-medium text-white/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left text-xs font-medium text-white/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
           onClick={() => {
             onNavigate?.();
             void signOut();
@@ -180,9 +180,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh bg-[#e8eaf2] p-1.5 lg:p-2">
-      <div className="flex h-[calc(100dvh-0.75rem)] overflow-hidden rounded-[1.25rem] bg-[#e8eaf2] lg:h-[calc(100dvh-1rem)]">
-        <aside className="m-1.5 hidden w-60 shrink-0 overflow-hidden rounded-2xl bg-deep-purple lg:flex lg:flex-col">
+    <div className="min-h-dvh bg-admin-canvas p-1.5 lg:p-2">
+      <div className="flex h-[calc(100dvh-0.75rem)] overflow-hidden rounded-xl bg-admin-canvas lg:h-[calc(100dvh-1rem)]">
+        <aside className="m-1.5 hidden w-60 shrink-0 overflow-hidden rounded-xl bg-deep-purple lg:flex lg:flex-col">
           <SidebarBody />
         </aside>
 
@@ -190,13 +190,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <header className="flex shrink-0 items-center gap-3 pb-3 lg:hidden">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-full" aria-label="Open admin menu">
+                <Button variant="outline" size="icon" aria-label="Open admin menu">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="h-dvh w-72 border-0 bg-deep-purple p-0 text-white shadow-lg sm:rounded-r-2xl"
+                className="h-dvh w-72 border-0 bg-deep-purple p-0 text-white sm:rounded-r-xl"
                 aria-describedby={undefined}
               >
                 <SheetTitle className="sr-only">Admin menu</SheetTitle>

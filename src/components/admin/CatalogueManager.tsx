@@ -83,7 +83,6 @@ export function ProductCatalogue({ canRestore }: { canRestore: boolean }) {
         action={
           <Button
             type="button"
-            className="rounded-full"
             onClick={() => {
               setSelectedId("new");
               setEditorOpen(true);
@@ -106,8 +105,8 @@ export function ProductCatalogue({ canRestore }: { canRestore: boolean }) {
                 <TableHead>Name</TableHead>
                 <TableHead className="hidden sm:table-cell">SKU</TableHead>
                 <TableHead className="hidden md:table-cell">Category</TableHead>
-                <TableHead className="text-center">Price</TableHead>
-                <TableHead className="text-center">Stock</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Stock</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>
@@ -117,7 +116,7 @@ export function ProductCatalogue({ canRestore }: { canRestore: boolean }) {
                 <TableRow key={product.id} data-state={selectedId === product.id ? "selected" : undefined}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#f4f6fb]">
+                      <span className="flex h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-admin-table">
                         <img
                           src={product.image_url?.trim() || productImage(product.category_slug ?? "")}
                           alt=""
@@ -129,8 +128,8 @@ export function ProductCatalogue({ canRestore }: { canRestore: boolean }) {
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">{product.sku ?? "—"}</TableCell>
                   <TableCell className="hidden md:table-cell">{product.category_name ?? "—"}</TableCell>
-                  <TableCell className="text-center tabular-nums">{formatGHS(Number(product.price))}</TableCell>
-                  <TableCell className="text-center tabular-nums">{product.stock_quantity}</TableCell>
+                  <TableCell className="text-right tabular-nums">{formatGHS(Number(product.price))}</TableCell>
+                  <TableCell className="text-right tabular-nums">{product.stock_quantity}</TableCell>
                   <TableCell>
                     <StatusBadge tone={catalogStatusTone(productStatus(product))}>
                       {productStatus(product)}
@@ -215,7 +214,6 @@ export function CategoryCatalogue() {
         action={
           <Button
             type="button"
-            className="rounded-full"
             onClick={() => {
               setSelectedCategoryId("new");
               setEditorOpen(true);

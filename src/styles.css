@@ -62,6 +62,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-admin-canvas: var(--admin-canvas);
+  --color-admin-table: var(--admin-table);
+  --color-admin-row-hover: var(--admin-row-hover);
   --shadow-card: 0 1px 2px color-mix(in srgb, var(--neutral-900) 6%, transparent);
   --shadow-pop: 0 12px 32px color-mix(in srgb, var(--neutral-900) 12%, transparent);
 }
@@ -83,7 +86,7 @@
   --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  --radius: 0.375rem;
+  --radius: 0.5rem;
   --site-header-height: 10rem;
   --background: var(--neutral-50);
   --foreground: var(--neutral-900);
@@ -95,6 +98,9 @@
   --primary-foreground: var(--neutral-0);
   --primary-dark: color-mix(in srgb, var(--tlb-purple) 78%, var(--neutral-900));
   --primary-soft: color-mix(in srgb, var(--tlb-purple) 8%, var(--neutral-0));
+  --admin-canvas: color-mix(in srgb, var(--neutral-100) 92%, var(--tlb-deep-purple) 8%);
+  --admin-table: var(--neutral-50);
+  --admin-row-hover: color-mix(in srgb, var(--primary-soft) 40%, var(--neutral-0));
   --secondary: var(--neutral-100);
   --secondary-foreground: var(--neutral-800);
   --muted: var(--neutral-100);

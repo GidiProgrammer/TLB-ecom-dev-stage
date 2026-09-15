@@ -59,7 +59,7 @@ function Account() {
     <div className="container-page py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-extrabold">Account dashboard</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Account dashboard</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">{user?.email}</p>
         </div>
         <div className="flex gap-2">
@@ -236,7 +236,7 @@ function ProfileEditor({ profile, userId }: { profile: AccountProfile; userId: s
 
   return (
     <form onSubmit={save} className="mt-6 rounded-md border border-border bg-card p-5">
-      <h2 className="font-display text-base font-bold">Profile details</h2>
+      <h2 className="text-base font-semibold">Profile details</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Update the contact details we use for orders and quotations. Account type and status cannot be changed here.
       </p>
@@ -296,7 +296,7 @@ function ProfileEditor({ profile, userId }: { profile: AccountProfile; userId: s
           {formError}
         </p>
       ) : null}
-      <Button type="submit" disabled={busy} className="mt-4 bg-accent text-accent-foreground hover:bg-accent/90">
+      <Button type="submit" disabled={busy} className="mt-4">
         {busy ? "Saving…" : "Save profile"}
       </Button>
     </form>

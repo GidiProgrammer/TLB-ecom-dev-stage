@@ -38,12 +38,12 @@ function AdminOverview() {
   const listedValue = orderRows.reduce((s, o) => s + Number(o.total), 0);
 
   const kpis = [
-    { label: "Orders", value: String(orderRows.length), tone: "bg-[#eef1f6]" },
-    { label: "Pending orders", value: String(pendingOrders.length), tone: "bg-[#f3efe8]" },
-    { label: "Quotes", value: String(quoteRows.length), tone: "bg-[#eef3ef]" },
-    { label: "Active products", value: String(activeProducts.length), tone: "bg-[#f1eef4]" },
-    { label: "Accounts", value: String(profileRows.length), tone: "bg-[#eef4f5]" },
-    { label: "Listed order value", value: formatGHS(listedValue), tone: "bg-[#f4f1ec]" },
+    { label: "Orders", value: String(orderRows.length), tone: "bg-muted" },
+    { label: "Pending orders", value: String(pendingOrders.length), tone: "bg-warning/10" },
+    { label: "Quotes", value: String(quoteRows.length), tone: "bg-success/10" },
+    { label: "Active products", value: String(activeProducts.length), tone: "bg-primary-soft" },
+    { label: "Accounts", value: String(profileRows.length), tone: "bg-muted" },
+    { label: "Listed order value", value: formatGHS(listedValue), tone: "bg-muted" },
   ];
 
   const attention = [
@@ -64,10 +64,10 @@ function AdminOverview() {
         {kpis.map((kpi) => (
           <div
             key={kpi.label}
-            className={`flex min-w-0 flex-col-reverse rounded-2xl px-4 py-3.5 shadow-[0_6px_18px_rgba(16,24,40,0.06)] ${kpi.tone}`}
+            className={`flex min-w-0 flex-col-reverse rounded-xl px-4 py-3.5 shadow-card ${kpi.tone}`}
           >
             <dt className="mt-1 truncate text-xs text-neutral-500">{kpi.label}</dt>
-            <dd className="text-xl font-semibold tabular-nums tracking-tight text-neutral-950">{kpi.value}</dd>
+            <dd className="text-xl font-semibold tabular-nums tracking-tight text-foreground">{kpi.value}</dd>
           </div>
         ))}
       </dl>
@@ -78,7 +78,7 @@ function AdminOverview() {
               <Link
                 key={item.label}
                 to={item.to}
-                className="flex min-h-11 flex-1 items-center justify-between gap-3 px-5 py-3 text-sm transition-colors hover:bg-[#fafbfe]"
+                className="flex min-h-11 flex-1 items-center justify-between gap-3 px-5 py-3 text-sm transition-colors hover:bg-admin-row-hover"
               >
                 <span className="text-neutral-500">{item.label}</span>
                 <span className="tabular-nums font-semibold text-neutral-950">{item.count}</span>

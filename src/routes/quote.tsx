@@ -126,7 +126,7 @@ function QuotePage() {
   if (confirmedQuote) {
     return (
       <div className="container-page py-24 text-center">
-        <h1 className="font-display text-2xl font-extrabold">Quote request received</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Quote request received</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Your request has been received. Keep this reference: {confirmedQuote}. TLB will review the list
           and provide pricing. You can view the request in Account. If your submission needs to be
@@ -195,7 +195,7 @@ function QuotePage() {
 
   return (
     <div className="container-page py-10">
-      <h1 className="font-display text-3xl font-extrabold">Request a quote</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Request a quote</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         Add the products you need and tell us the quantities. Our team will review the request and provide
         pricing. This is not an invoice and no payment is taken online.

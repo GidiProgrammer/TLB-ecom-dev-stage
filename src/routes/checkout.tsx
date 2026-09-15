@@ -147,7 +147,7 @@ function Checkout() {
   if (confirmedOrderId) {
     return (
       <div className="container-page py-24 text-center">
-        <h1 className="font-display text-2xl font-extrabold">Order confirmed</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Order confirmed</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Your order was submitted successfully. Keep this reference: {confirmedOrderId}. You can
           also find it in your account. No payment was taken online — we will confirm availability,
@@ -163,7 +163,7 @@ function Checkout() {
   if (cart.length === 0) {
     return (
       <div className="container-page py-24 text-center">
-        <h1 className="font-display text-2xl font-extrabold">Nothing to check out</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Nothing to check out</h1>
         <p className="mt-2 text-sm text-muted-foreground">Add products to your cart first.</p>
         <Button asChild className="mt-6">
           <Link to="/shop">Browse products</Link>
@@ -174,7 +174,7 @@ function Checkout() {
 
   return (
     <div className="container-page py-10">
-      <h1 className="font-display text-3xl font-extrabold">Checkout</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Checkout</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         No payment is taken online. Submit your order and we will confirm availability, delivery cost and
         invoicing terms.
@@ -248,7 +248,7 @@ function Checkout() {
               <CheckoutLine key={line.id} line={line} />
             ))}
           </ul>
-          <div className="mt-4 flex justify-between border-t border-border pt-3 font-display text-base font-extrabold">
+          <div className="mt-4 flex justify-between border-t border-border pt-3 text-base font-semibold">
             <span>Total</span>
             <span className="text-primary">{formatGHS(cartSubtotal)}</span>
           </div>
