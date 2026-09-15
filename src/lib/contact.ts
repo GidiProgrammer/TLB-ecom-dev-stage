@@ -10,7 +10,7 @@ function clientIpFromRequest(request: Request): string | null {
 export const submitContact = createServerFn({ method: "POST" })
   .validator((data: unknown) => data)
   .handler(async ({ data }) => {
-  const { mapContactError, submitContactEnquiry } = await import("@/server/mail/contact");
+  const { runSubmitContactServerFn } = await import("@/server/mail/contact");
 
   let clientIp: string | null = null;
   try {
@@ -20,10 +20,6 @@ export const submitContact = createServerFn({ method: "POST" })
     clientIp = null;
   }
 
-  try {
-    await submitContactEnquiry(data, { clientIp });
-    return { accepted: true as const };
-  } catch (error) {
-    throw new Error(mapContactError(error));
-  }
+  await runSubmitContactServerFn(data, { clientIp });
+  return { accepted: true as const };
 });

@@ -118,10 +118,17 @@ export function claimPendingInMemory(limit = 10, options: ClaimOptions = {}): Tr
   return claimed;
 }
 
+export function transactionalOutboxBackendKind(): "memory" | "supabase" {
+  if (process.env["MAIL_OUTBOX_BACKEND"] === "memory" || !process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
+    return "memory";
+  }
+  return "supabase";
+}
+
 export async function enqueueTransactionalEmail(
   input: EnqueueTransactionalEmailInput,
 ): Promise<{ row: TransactionalOutboxRow; created: boolean }> {
-  if (process.env["MAIL_OUTBOX_BACKEND"] === "memory" || !process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
+  if (transactionalOutboxBackendKind() === "memory") {
     return enqueueInMemory(input);
   }
 
@@ -223,7 +230,7 @@ function mapDbRow(row: DbOutboxRow): TransactionalOutboxRow {
 }
 
 export async function markOutboxSent(id: string, now = new Date()): Promise<void> {
-  if (process.env["MAIL_OUTBOX_BACKEND"] === "memory" || !process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
+  if (transactionalOutboxBackendKind() === "memory") {
     const row = memoryById.get(id);
     if (!row) throw new Error("Outbox row not found");
     row.deliveryStatus = "sent";
@@ -256,7 +263,7 @@ export async function markOutboxAttemptFailed(
     : nextAttemptAtAfterFailure(input.attemptCount, input.now).toISOString();
   const status = input.permanent ? "failed" : "pending";
 
-  if (process.env["MAIL_OUTBOX_BACKEND"] === "memory" || !process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
+  if (transactionalOutboxBackendKind() === "memory") {
     const row = memoryById.get(id);
     if (!row) throw new Error("Outbox row not found");
     row.deliveryStatus = status;
@@ -288,7 +295,7 @@ export async function claimPendingTransactionalEmails(
   limit = 10,
   options: ClaimOptions = {},
 ): Promise<TransactionalOutboxRow[]> {
-  if (process.env["MAIL_OUTBOX_BACKEND"] === "memory" || !process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
+  if (transactionalOutboxBackendKind() === "memory") {
     return claimPendingInMemory(limit, options);
   }
 

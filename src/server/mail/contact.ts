@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { transactionalEventKey } from "./events.ts";
-import { enqueueTransactionalEmail } from "./outbox.ts";
+import { enqueueTransactionalEmail, transactionalOutboxBackendKind } from "./outbox.ts";
 import type { EnqueueTransactionalEmailInput, TransactionalOutboxRow } from "./types.ts";
 
 export const CONTACT_SUBMITTED_TEMPLATE_ID = "contact-submitted";
@@ -67,9 +67,38 @@ export class ContactConfigError extends Error {
   }
 }
 
+function looksLikeContactFields(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const rec = value as Record<string, unknown>;
+  return typeof rec["name"] === "string" && typeof rec["email"] === "string" && typeof rec["message"] === "string";
+}
+
+/**
+ * TanStack Start POST server functions serialize `{ data: form }`.
+ * Tests and some runtimes pass the form object directly. Accept both.
+ */
+export function normalizeContactInput(data: unknown): unknown {
+  if (looksLikeContactFields(data)) return data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return data;
+
+  let current: unknown = data;
+  for (let depth = 0; depth < 2; depth += 1) {
+    if (!current || typeof current !== "object" || Array.isArray(current) || !("data" in current)) {
+      break;
+    }
+    current = (current as { data: unknown }).data;
+    if (looksLikeContactFields(current)) return current;
+  }
+
+  return data;
+}
+
 export function parseContactInput(data: unknown): ParsedContactInput {
-  const parsed = contactInputSchema.safeParse(data);
+  const parsed = contactInputSchema.safeParse(normalizeContactInput(data));
   if (!parsed.success) {
+    console.error("[contact] validation failed", {
+      paths: parsed.error.issues.map((issue) => issue.path.join(".") || "(root)").slice(0, 12),
+    });
     throw new ContactValidationError();
   }
   return parsed.data;
@@ -198,9 +227,27 @@ export async function submitContactEnquiry(
     const enqueue = options.enqueue ?? enqueueTransactionalEmail;
     await enqueue(input);
   } catch (error) {
-    console.error("[contact] enqueue failed", enquiryId);
+    const safeMessage = error instanceof Error ? error.message.slice(0, 200) : "unknown";
+    console.error("[contact] enqueue failed", {
+      enquiryId,
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: safeMessage,
+      outboxBackend: transactionalOutboxBackendKind(),
+    });
     throw new Error("Could not submit your message. Please try again or call us.");
   }
 
   return { accepted: true, enquiryId };
+}
+
+/** Server-function boundary: map internals to browser-safe errors without leaking details. */
+export async function runSubmitContactServerFn(
+  data: unknown,
+  options: SubmitContactOptions = {},
+): Promise<SubmitContactResult> {
+  try {
+    return await submitContactEnquiry(data, options);
+  } catch (error) {
+    throw new Error(mapContactError(error));
+  }
 }

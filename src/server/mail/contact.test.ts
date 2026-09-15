@@ -10,8 +10,10 @@ import {
   ContactConfigError,
   ContactRateLimitError,
   ContactValidationError,
+  mapContactError,
   parseContactInput,
   resetContactRateLimit,
+  runSubmitContactServerFn,
   staffContactRecipient,
   submitContactEnquiry,
 } from "./contact.ts";
@@ -54,6 +56,12 @@ describe("contact validation", () => {
     assert.equal(parsed.phone, "024 000 0000");
     assert.equal(parsed.institution, "Lab One");
     assert.equal(parsed.message, "Need reagent stock");
+  });
+
+  test("server-fn { data: form } envelope is unwrapped", () => {
+    const parsed = parseContactInput({ data: valid });
+    assert.equal(parsed.name, "Ama Mensah");
+    assert.equal(parsed.email, "ama@example.test");
   });
 
   test("invalid email is rejected", () => {
@@ -163,6 +171,7 @@ describe("contact security", () => {
     const libContact = readFileSync(resolve(root, "src/lib/contact.ts"), "utf8");
     assert.match(libContact, /createServerFn/);
     assert.match(libContact, /import\("@\/server\/mail\/contact"\)/);
+    assert.match(libContact, /runSubmitContactServerFn/);
 
     const walk = (dir: string) => {
       for (const name of readdirSync(dir, { withFileTypes: true })) {
@@ -244,10 +253,64 @@ describe("contact failure semantics", () => {
   });
 
   test("internal errors are not leaked to the browser mapper", async () => {
-    const { mapContactError } = await import("./contact.ts");
     assert.equal(
       mapContactError(new Error("password authentication failed for user postgres")),
       "Could not submit your message. Please try again or call us.",
     );
+  });
+
+  test("honeypot submissions are rejected without enqueue", async () => {
+    await assert.rejects(
+      () => submitContactEnquiry({ ...valid, website: "https://spam.test" }),
+      ContactValidationError,
+    );
+    assert.equal(listMemoryOutbox().length, 0);
+  });
+
+  test("missing CONTACT_RECIPIENT_EMAIL rejects before enqueue", async () => {
+    delete process.env["CONTACT_RECIPIENT_EMAIL"];
+    await assert.rejects(() => submitContactEnquiry(valid), ContactConfigError);
+    assert.equal(listMemoryOutbox().length, 0);
+  });
+
+  test("TanStack server-fn envelope { data: form } is accepted", async () => {
+    const result = await runSubmitContactServerFn({ data: valid });
+    assert.equal(result.accepted, true);
+    assert.equal(listMemoryOutbox().length, 1);
+    assert.equal(listMemoryOutbox()[0]?.eventType, "contact.submitted");
+  });
+
+  test("double-wrapped { data: { data: form } } is accepted", async () => {
+    const result = await runSubmitContactServerFn({ data: { data: valid } });
+    assert.equal(result.accepted, true);
+    assert.equal(listMemoryOutbox().length, 1);
+  });
+
+  test("invalid contact submission is mapped at the server-fn boundary", async () => {
+    await assert.rejects(
+      () => runSubmitContactServerFn({ data: { ...valid, email: "not-an-email" } }),
+      (error: unknown) => error instanceof Error && error.message === "Please check the form and try again.",
+    );
+    assert.equal(listMemoryOutbox().length, 0);
+  });
+
+  test("enqueue failure is mapped at the server-fn boundary without leaking the cause", async () => {
+    await assert.rejects(
+      () =>
+        runSubmitContactServerFn(valid, {
+          enqueue: async () => {
+            throw new Error("password authentication failed for user postgres");
+          },
+        }),
+      (error: unknown) =>
+        error instanceof Error && error.message === "Could not submit your message. Please try again or call us.",
+    );
+  });
+
+  test("successful enqueue returns accepted", async () => {
+    const result = await runSubmitContactServerFn(valid);
+    assert.equal(result.accepted, true);
+    assert.match(result.enquiryId, /^[0-9a-f-]{36}$/i);
+    assert.equal(listMemoryOutbox().length, 1);
   });
 });
