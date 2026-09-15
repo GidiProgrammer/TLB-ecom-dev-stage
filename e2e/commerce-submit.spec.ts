@@ -37,10 +37,16 @@ test.describe("commerce submit idempotency", () => {
     ]);
 
     if (await confirmed.count()) {
+      await expect(page).toHaveURL(/\/checkout\/confirmed\?ref=TLB-/);
       await expect(page.getByText(/Keep this reference/i)).toBeVisible();
       await expect(page.getByText(/No payment was taken/i)).toBeVisible();
       const nonce = await page.evaluate(() => window.localStorage.getItem("tlb-order-submission-nonce"));
       expect(nonce).toBeNull();
+      const confirmationUrl = page.url();
+      await page.reload();
+      await expect(page).toHaveURL(confirmationUrl);
+      await expect(page.getByRole("heading", { name: "Order confirmed" })).toBeVisible();
+      await expect(page.getByText(/Keep this reference/i)).toBeVisible();
       await page.goto("/cart");
       await expect(page.getByText("Your cart is empty")).toBeVisible();
     }
@@ -77,9 +83,15 @@ test.describe("commerce submit idempotency", () => {
     ]);
 
     if (await confirmed.count()) {
+      await expect(page).toHaveURL(/\/quote\/confirmed\?ref=QT-/);
       await expect(page.getByText(/Keep this reference/i)).toBeVisible();
       const nonce = await page.evaluate(() => window.localStorage.getItem("tlb-quote-submission-nonce"));
       expect(nonce).toBeNull();
+      const confirmationUrl = page.url();
+      await page.reload();
+      await expect(page).toHaveURL(confirmationUrl);
+      await expect(page.getByRole("heading", { name: "Quote request received" })).toBeVisible();
+      await expect(page.getByText(/Keep this reference/i)).toBeVisible();
     }
   });
 });

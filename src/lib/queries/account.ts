@@ -172,6 +172,36 @@ export async function fetchAccountOrders(): Promise<AccountOrder[]> {
   }));
 }
 
+export async function fetchOwnedOrderByReference(reference: string): Promise<AccountOrder | null> {
+  const { data: order, error } = await supabase
+    .from("orders")
+    .select(ORDER_COLUMNS)
+    .eq("reference", reference)
+    .maybeSingle();
+  const err = loadError("Could not load this order", error);
+  if (err) throw err;
+  if (!order) return null;
+
+  const { data: items, error: itemError } = await supabase
+    .from("order_items")
+    .select(ORDER_ITEM_COLUMNS)
+    .eq("order_id", order.id);
+  const itemErr = loadError("Could not load this order", itemError);
+  if (itemErr) throw itemErr;
+
+  return {
+    ...order,
+    total: Number(order.total),
+    order_items: (items ?? []).map((item) => ({
+      id: item.id,
+      product_name: item.product_name,
+      unit_price: item.unit_price,
+      quantity: item.quantity,
+      line_total: item.line_total,
+    })),
+  };
+}
+
 export async function fetchAccountQuotes(): Promise<AccountQuote[]> {
   const { data: quotes, error } = await supabase
     .from("quotes")
@@ -207,6 +237,34 @@ export async function fetchAccountQuotes(): Promise<AccountQuote[]> {
     ...quote,
     quote_items: itemsByQuote.get(quote.id) ?? [],
   }));
+}
+
+export async function fetchOwnedQuoteByReference(reference: string): Promise<AccountQuote | null> {
+  const { data: quote, error } = await supabase
+    .from("quotes")
+    .select(QUOTE_COLUMNS)
+    .eq("reference", reference)
+    .maybeSingle();
+  const err = loadError("Could not load this quote request", error);
+  if (err) throw err;
+  if (!quote) return null;
+
+  const { data: items, error: itemError } = await supabase
+    .from("quote_items")
+    .select(QUOTE_ITEM_COLUMNS)
+    .eq("quote_id", quote.id);
+  const itemErr = loadError("Could not load this quote request", itemError);
+  if (itemErr) throw itemErr;
+
+  return {
+    ...quote,
+    quote_items: (items ?? []).map((item) => ({
+      id: item.id,
+      product_name: item.product_name,
+      quantity: item.quantity,
+      quoted_price: item.quoted_price,
+    })),
+  };
 }
 
 export function useAccountProfile(userId: string | undefined) {

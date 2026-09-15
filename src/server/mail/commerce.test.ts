@@ -127,8 +127,10 @@ describe("post-commit failure semantics", () => {
 describe("client / security contract", () => {
   test("browser sources do not contain service-role, mail secrets, or outbox writes", () => {
     const clientFiles = [
-      "src/routes/checkout.tsx",
-      "src/routes/quote.tsx",
+      "src/routes/checkout.index.tsx",
+      "src/routes/checkout.confirmed.tsx",
+      "src/routes/quote.index.tsx",
+      "src/routes/quote.confirmed.tsx",
       "src/routes/contact.tsx",
       "src/routes/index.tsx",
       "src/integrations/supabase/client.ts",

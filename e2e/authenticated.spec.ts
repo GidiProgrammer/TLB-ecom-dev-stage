@@ -111,6 +111,21 @@ test.describe("authenticated account", () => {
     }
   });
 
+  test("unknown owned confirmation refs show a safe missing state", async ({ page }) => {
+    await page.goto("/checkout/confirmed?ref=TLB-19990101-000000");
+    await expect(page.getByRole("heading", { name: "Order confirmation not found" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("link", { name: "Go to your account" })).toBeVisible();
+    await expect(page).toHaveURL(/\/checkout\/confirmed/);
+
+    await page.goto("/quote/confirmed?ref=QT-19990101-000000");
+    await expect(page.getByRole("heading", { name: "Quote confirmation not found" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("link", { name: "Go to your account" })).toBeVisible();
+  });
+
   test("safe redirect returns to checkout and quote; unsafe redirect stays internal", async ({ page }) => {
     await page.goto("/auth?redirect=/checkout");
     await expect(page).toHaveURL(/\/checkout/, { timeout: 15_000 });

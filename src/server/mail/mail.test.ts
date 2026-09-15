@@ -133,8 +133,10 @@ describe("outbox security contract", () => {
     const root = resolve(here, "../../..");
     const clientGlobs = [
       "src/routes/contact.tsx",
-      "src/routes/checkout.tsx",
-      "src/routes/quote.tsx",
+      "src/routes/checkout.index.tsx",
+      "src/routes/checkout.confirmed.tsx",
+      "src/routes/quote.index.tsx",
+      "src/routes/quote.confirmed.tsx",
       "src/routes/index.tsx",
       "src/integrations/supabase/client.ts",
     ];

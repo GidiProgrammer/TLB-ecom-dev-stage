@@ -23,7 +23,11 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedExperimentsRouteImport } from './routes/_authenticated/experiments'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as CheckoutIndexRouteImport } from './routes/checkout.index'
+import { Route as CheckoutConfirmedRouteImport } from './routes/checkout.confirmed'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as QuoteIndexRouteImport } from './routes/quote.index'
+import { Route as QuoteConfirmedRouteImport } from './routes/quote.confirmed'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAccountsRouteImport } from './routes/_authenticated/admin/accounts'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
@@ -102,10 +106,30 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
+const CheckoutIndexRoute = CheckoutIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CheckoutRoute,
+} as any)
+const CheckoutConfirmedRoute = CheckoutConfirmedRouteImport.update({
+  id: '/confirmed',
+  path: '/confirmed',
+  getParentRoute: () => CheckoutRoute,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const QuoteIndexRoute = QuoteIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => QuoteRoute,
+} as any)
+const QuoteConfirmedRoute = QuoteConfirmedRouteImport.update({
+  id: '/confirmed',
+  path: '/confirmed',
+  getParentRoute: () => QuoteRoute,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
@@ -155,15 +179,19 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRouteWithChildren
   '/cart': typeof CartRoute
-  '/checkout': typeof CheckoutRoute
+  '/checkout': typeof CheckoutRouteWithChildren
   '/contact': typeof ContactRoute
-  '/quote': typeof QuoteRoute
+  '/quote': typeof QuoteRouteWithChildren
   '/shop': typeof ShopRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/account': typeof AuthenticatedAccountRoute
   '/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/checkout/confirmed': typeof CheckoutConfirmedRoute
   '/product/$id': typeof ProductIdRoute
+  '/quote/confirmed': typeof QuoteConfirmedRoute
+  '/checkout/': typeof CheckoutIndexRoute
+  '/quote/': typeof QuoteIndexRoute
   '/admin/accounts': typeof AuthenticatedAdminAccountsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -178,14 +206,16 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRouteWithChildren
   '/cart': typeof CartRoute
-  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
-  '/quote': typeof QuoteRoute
   '/shop': typeof ShopRoute
   '/account': typeof AuthenticatedAccountRoute
   '/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/checkout/confirmed': typeof CheckoutConfirmedRoute
   '/product/$id': typeof ProductIdRoute
+  '/quote/confirmed': typeof QuoteConfirmedRoute
+  '/checkout': typeof CheckoutIndexRoute
+  '/quote': typeof QuoteIndexRoute
   '/admin/accounts': typeof AuthenticatedAdminAccountsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -202,15 +232,19 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRouteWithChildren
   '/cart': typeof CartRoute
-  '/checkout': typeof CheckoutRoute
+  '/checkout': typeof CheckoutRouteWithChildren
   '/contact': typeof ContactRoute
-  '/quote': typeof QuoteRoute
+  '/quote': typeof QuoteRouteWithChildren
   '/shop': typeof ShopRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/checkout/confirmed': typeof CheckoutConfirmedRoute
   '/product/$id': typeof ProductIdRoute
+  '/quote/confirmed': typeof QuoteConfirmedRoute
+  '/checkout/': typeof CheckoutIndexRoute
+  '/quote/': typeof QuoteIndexRoute
   '/_authenticated/admin/accounts': typeof AuthenticatedAdminAccountsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -235,7 +269,11 @@ export interface FileRouteTypes {
     | '/account'
     | '/experiments'
     | '/blog/$slug'
+    | '/checkout/confirmed'
     | '/product/$id'
+    | '/quote/confirmed'
+    | '/checkout/'
+    | '/quote/'
     | '/admin/accounts'
     | '/admin/categories'
     | '/admin/orders'
@@ -250,14 +288,16 @@ export interface FileRouteTypes {
     | '/auth'
     | '/blog'
     | '/cart'
-    | '/checkout'
     | '/contact'
-    | '/quote'
     | '/shop'
     | '/account'
     | '/experiments'
     | '/blog/$slug'
+    | '/checkout/confirmed'
     | '/product/$id'
+    | '/quote/confirmed'
+    | '/checkout'
+    | '/quote'
     | '/admin/accounts'
     | '/admin/categories'
     | '/admin/orders'
@@ -281,7 +321,11 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/experiments'
     | '/blog/$slug'
+    | '/checkout/confirmed'
     | '/product/$id'
+    | '/quote/confirmed'
+    | '/checkout/'
+    | '/quote/'
     | '/_authenticated/admin/accounts'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/orders'
@@ -298,9 +342,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BlogRoute: typeof BlogRouteWithChildren
   CartRoute: typeof CartRoute
-  CheckoutRoute: typeof CheckoutRoute
+  CheckoutRoute: typeof CheckoutRouteWithChildren
   ContactRoute: typeof ContactRoute
-  QuoteRoute: typeof QuoteRoute
+  QuoteRoute: typeof QuoteRouteWithChildren
   ShopRoute: typeof ShopRoute
   ProductIdRoute: typeof ProductIdRoute
   ApiCronTransactionalEmailRoute: typeof ApiCronTransactionalEmailRoute
@@ -406,12 +450,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/checkout/': {
+      id: '/checkout/'
+      path: '/'
+      fullPath: '/checkout/'
+      preLoaderRoute: typeof CheckoutIndexRouteImport
+      parentRoute: typeof CheckoutRoute
+    }
+    '/checkout/confirmed': {
+      id: '/checkout/confirmed'
+      path: '/confirmed'
+      fullPath: '/checkout/confirmed'
+      preLoaderRoute: typeof CheckoutConfirmedRouteImport
+      parentRoute: typeof CheckoutRoute
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
       fullPath: '/product/$id'
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/quote/': {
+      id: '/quote/'
+      path: '/'
+      fullPath: '/quote/'
+      preLoaderRoute: typeof QuoteIndexRouteImport
+      parentRoute: typeof QuoteRoute
+    }
+    '/quote/confirmed': {
+      id: '/quote/confirmed'
+      path: '/confirmed'
+      fullPath: '/quote/confirmed'
+      preLoaderRoute: typeof QuoteConfirmedRouteImport
+      parentRoute: typeof QuoteRoute
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -514,6 +586,32 @@ const BlogRouteChildren: BlogRouteChildren = {
 
 const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
 
+interface CheckoutRouteChildren {
+  CheckoutConfirmedRoute: typeof CheckoutConfirmedRoute
+  CheckoutIndexRoute: typeof CheckoutIndexRoute
+}
+
+const CheckoutRouteChildren: CheckoutRouteChildren = {
+  CheckoutConfirmedRoute: CheckoutConfirmedRoute,
+  CheckoutIndexRoute: CheckoutIndexRoute,
+}
+
+const CheckoutRouteWithChildren = CheckoutRoute._addFileChildren(
+  CheckoutRouteChildren,
+)
+
+interface QuoteRouteChildren {
+  QuoteConfirmedRoute: typeof QuoteConfirmedRoute
+  QuoteIndexRoute: typeof QuoteIndexRoute
+}
+
+const QuoteRouteChildren: QuoteRouteChildren = {
+  QuoteConfirmedRoute: QuoteConfirmedRoute,
+  QuoteIndexRoute: QuoteIndexRoute,
+}
+
+const QuoteRouteWithChildren = QuoteRoute._addFileChildren(QuoteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -521,9 +619,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BlogRoute: BlogRouteWithChildren,
   CartRoute: CartRoute,
-  CheckoutRoute: CheckoutRoute,
+  CheckoutRoute: CheckoutRouteWithChildren,
   ContactRoute: ContactRoute,
-  QuoteRoute: QuoteRoute,
+  QuoteRoute: QuoteRouteWithChildren,
   ShopRoute: ShopRoute,
   ProductIdRoute: ProductIdRoute,
   ApiCronTransactionalEmailRoute: ApiCronTransactionalEmailRoute,

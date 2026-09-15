@@ -33,9 +33,12 @@ describe("mapOrderError", () => {
   });
 
   test("checkout confirmation does not invite a second submit", () => {
-    const checkout = readFileSync(resolve(here, "../routes/checkout.tsx"), "utf8");
-    assert.match(checkout, /submitted successfully/);
+    const checkout = readFileSync(resolve(here, "../routes/checkout.index.tsx"), "utf8");
+    const confirmed = readFileSync(resolve(here, "../routes/checkout.confirmed.tsx"), "utf8");
+    assert.match(confirmed, /submitted successfully/);
     assert.doesNotMatch(checkout, /safely submit again/);
+    assert.doesNotMatch(confirmed, /safely submit again/);
     assert.doesNotMatch(checkout, /needs to be retried/);
+    assert.doesNotMatch(confirmed, /needs to be retried/);
   });
 });
