@@ -3,7 +3,6 @@ import {
   ArrowRight,
   BadgeCheck,
   FileText,
-  FlaskConical,
   Headphones,
   Truck,
 } from "lucide-react";
@@ -48,55 +47,58 @@ function Home() {
 
   return (
     <>
-      <section className="bg-primary text-primary-foreground">
-        <div className="container-page grid items-center gap-10 py-16 lg:grid-cols-2 lg:py-24">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
-              <FlaskConical className="h-3.5 w-3.5" /> Laboratory supplies from Accra
-            </p>
-            <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] sm:text-5xl lg:text-6xl">
-              Laboratory supplies you can build a result on
-            </h1>
-            <p className="mt-5 max-w-xl text-base text-primary-foreground/85">
-              TLB Enterprise supplies analytical chemicals, benchtop equipment, borosilicate glassware,
-              PPE and consumables to universities, hospitals, industry and research institutions across
-              Ghana.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="bg-card text-primary hover:bg-card/90">
-                <Link to="/shop">
-                  Browse the catalogue <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
+      <section aria-labelledby="home-hero-heading">
+        <div className="relative isolate h-[calc(100svh-var(--site-header-height))] max-h-[calc(100svh-var(--site-header-height))] overflow-hidden">
+          <img
+            src={heroLab}
+            alt="Scientist working at a laboratory bench with analytical instruments"
+            className="absolute inset-0 h-full w-full scale-x-[-1] object-cover object-[center_20%] md:object-[28%_center]"
+          />
+          <div className="hero-readability-veil absolute inset-0" aria-hidden />
+          <div className="container-page relative flex h-full min-h-0 items-end py-8 md:items-center md:py-12 lg:py-16">
+            <div className="w-full max-w-xl text-white md:max-w-[42%] lg:max-w-[26rem] xl:max-w-[28rem]">
+              <h1
+                id="home-hero-heading"
+                className="max-w-[20ch] text-[2rem] font-semibold leading-[1.15] tracking-tight sm:text-[2.5rem] md:text-[3rem] lg:text-[3.5rem]"
               >
-                <Link to="/quote">Request a quote</Link>
-              </Button>
+                Laboratory supplies for serious work.
+              </h1>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-white [text-shadow:0_1px_10px_rgb(8_5_14_/_0.65)] sm:mt-5 sm:text-base md:[text-shadow:none]">
+                TLB Enterprise supplies analytical chemicals, benchtop equipment, borosilicate glassware,
+                PPE and consumables to universities, hospitals, industry and research institutions across
+                Ghana.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90">
+                  <Link to="/shop">
+                    Browse the catalogue <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-white/80 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                >
+                  <Link to="/quote">Request a quote</Link>
+                </Button>
+              </div>
             </div>
-            <dl className="mt-10 grid max-w-lg grid-cols-3 gap-6">
-              {[
-                ["Catalogue", "Chemicals, equipment and consumables"],
-                ["Institutions", "Universities, hospitals and industry"],
-                ["Ghana-wide", "Delivery arranged after confirmation"],
-              ].map(([v, l]) => (
-                <div key={v}>
-                  <dt className="font-display text-lg font-extrabold sm:text-2xl">{v}</dt>
-                  <dd className="text-xs text-primary-foreground/75">{l}</dd>
-                </div>
-              ))}
-            </dl>
           </div>
-          <div className="relative">
-            <img
-              src={heroLab}
-              alt="Scientist working at a laboratory bench with analytical instruments"
-              className="w-full rounded-lg object-cover shadow-pop"
-            />
-          </div>
+        </div>
+        <div className="border-b border-border bg-neutral-50">
+          <dl className="container-page grid gap-5 py-5 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-border">
+            {[
+              ["Catalogue", "Chemicals, equipment and consumables"],
+              ["Institutions", "Universities, hospitals and industry"],
+              ["Ghana-wide", "Delivery arranged after confirmation"],
+            ].map(([title, detail]) => (
+              <div key={title} className="sm:px-8 first:sm:pl-0 last:sm:pr-0">
+                <dt className="text-sm font-semibold text-foreground">{title}</dt>
+                <dd className="mt-1 text-sm text-muted-foreground">{detail}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 

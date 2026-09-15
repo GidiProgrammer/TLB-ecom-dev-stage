@@ -14,7 +14,7 @@ const adminOps = readFileSync(resolve(here, "../../lib/admin-ops.ts"), "utf8");
 const catalogOps = readFileSync(resolve(here, "../../lib/catalog-ops.ts"), "utf8");
 const adminRoute = readFileSync(resolve(here, "../../components/admin/OrderWorkspace.tsx"), "utf8");
 const catalogueUi = readFileSync(
-  resolve(here, "../../components/admin/CatalogueManager.tsx"),
+  resolve(here, "../../components/admin/catalogue-editors.tsx"),
   "utf8",
 );
 

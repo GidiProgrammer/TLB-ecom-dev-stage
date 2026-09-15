@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { formatGHS } from "@/lib/catalog-utils";
+import { formatGHS, productImage } from "@/lib/catalog-utils";
+import { listAdminProducts } from "@/lib/catalog-ops";
 import { Constants } from "@/integrations/supabase/types";
 import {
   allowedOrderTransitions,
@@ -10,7 +11,16 @@ import {
 } from "@/lib/commerce-status";
 import { cancelOrder, updateOrderStatus } from "@/lib/admin-ops";
 import type { AdminOrder } from "@/lib/queries/admin";
-import { AdminEmpty, AdminPanel, AdminSearch } from "@/components/admin/AdminPageHeader";
+import {
+  AdminCardToolbar,
+  AdminEmpty,
+  AdminIdentity,
+  AdminPagination,
+  AdminPanel,
+  AdminSearch,
+  AdminTable,
+  useAdminPage,
+} from "@/components/admin/AdminPageHeader";
 import { StatusBadge, orderStatusTone } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -37,9 +46,14 @@ function mutationMessage(error: unknown, fallback: string) {
 
 export function OrderWorkspace({ orders, compact }: { orders: AdminOrder[]; compact?: boolean }) {
   const [q, setQ] = useState("");
+  const catalogue = useQuery({ queryKey: ["admin-catalogue"], queryFn: () => listAdminProducts() });
+  const productById = useMemo(
+    () => new Map((catalogue.data ?? []).map((product) => [product.id, product])),
+    [catalogue.data],
+  );
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    const list = term
+    return term
       ? orders.filter(
           (o) =>
             o.reference.toLowerCase().includes(term) ||
@@ -47,47 +61,86 @@ export function OrderWorkspace({ orders, compact }: { orders: AdminOrder[]; comp
             o.status.toLowerCase().includes(term),
         )
       : orders;
-    return compact ? list.slice(0, 8) : list;
-  }, [orders, q, compact]);
+  }, [orders, q]);
+  const paging = useAdminPage(filtered, q);
+  const rows = compact ? filtered.slice(0, 8) : paging.slice;
 
   if (orders.length === 0) {
     return (
-      <AdminPanel>
+      <AdminPanel fill>
         <AdminEmpty>No orders yet.</AdminEmpty>
       </AdminPanel>
     );
   }
 
   return (
-    <AdminPanel>
+    <AdminPanel fill={!compact}>
       {compact ? null : (
-        <div className="border-b border-border px-4 py-3">
+        <AdminCardToolbar>
           <AdminSearch value={q} onChange={setQ} label="Search orders" />
-        </div>
+        </AdminCardToolbar>
       )}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Reference</TableHead>
-            <TableHead className="hidden md:table-cell">Created</TableHead>
-            <TableHead className="hidden sm:table-cell">Customer</TableHead>
-            <TableHead className="text-right">Lines</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead>Status</TableHead>
-            {compact ? null : <TableHead className="text-right">Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((order) => (
-            <OrderRow key={order.id} order={order} compact={Boolean(compact)} />
-          ))}
-        </TableBody>
-      </Table>
+      {filtered.length === 0 ? (
+        <AdminEmpty>No orders match that search.</AdminEmpty>
+      ) : (
+        <AdminTable>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Reference</TableHead>
+              <TableHead className="hidden md:table-cell">Created</TableHead>
+              <TableHead className="hidden sm:table-cell">Customer</TableHead>
+              <TableHead className="text-center">Lines</TableHead>
+              <TableHead className="text-center">Total</TableHead>
+              <TableHead>Status</TableHead>
+              {compact ? null : <TableHead className="text-center">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((order) => (
+              <OrderRow
+                key={order.id}
+                order={order}
+                compact={Boolean(compact)}
+                imageSrc={orderThumb(order, productById)}
+              />
+            ))}
+          </TableBody>
+        </AdminTable>
+      )}
+      {compact || filtered.length === 0 ? null : (
+        <AdminPagination
+          page={paging.page}
+          pageCount={paging.pageCount}
+          start={paging.start}
+          end={paging.end}
+          total={paging.total}
+          onPage={paging.setPage}
+        />
+      )}
     </AdminPanel>
   );
 }
 
-function OrderRow({ order, compact = false }: { order: AdminOrder; compact?: boolean }) {
+function orderThumb(
+  order: AdminOrder,
+  productById: Map<string, { image_url: string | null; category_slug: string | null }>,
+) {
+  const first = order.order_items[0];
+  const productId = first?.product_id;
+  if (!productId) return productImage("");
+  const product = productById.get(productId);
+  return product?.image_url?.trim() || productImage(product?.category_slug ?? "");
+}
+
+function OrderRow({
+  order,
+  compact = false,
+  imageSrc,
+}: {
+  order: AdminOrder;
+  compact?: boolean;
+  imageSrc: string;
+}) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const nextStatuses = allowedOrderTransitions(order.status);
@@ -123,13 +176,22 @@ function OrderRow({ order, compact = false }: { order: AdminOrder; compact?: boo
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{order.reference}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#f4f6fb]">
+            <img src={imageSrc} alt="" className="h-full w-full object-cover" />
+          </span>
+          <AdminIdentity hint={order.order_items[0]?.product_name}>
+            {order.reference}
+          </AdminIdentity>
+        </div>
+      </TableCell>
       <TableCell className="hidden whitespace-nowrap text-muted-foreground md:table-cell">
         {new Date(order.created_at).toLocaleString("en-GB")}
       </TableCell>
       <TableCell className="hidden sm:table-cell">{order.shipping_name ?? "—"}</TableCell>
-      <TableCell className="text-right tabular-nums">{order.order_items.length}</TableCell>
-      <TableCell className="text-right tabular-nums">{formatGHS(Number(order.total))}</TableCell>
+      <TableCell className="text-center tabular-nums">{order.order_items.length}</TableCell>
+      <TableCell className="text-center tabular-nums">{formatGHS(Number(order.total))}</TableCell>
       <TableCell>
         {terminal || compact ? (
           <StatusBadge tone={orderStatusTone(order.status)}>{order.status}</StatusBadge>
@@ -139,7 +201,7 @@ function OrderRow({ order, compact = false }: { order: AdminOrder; compact?: boo
             onValueChange={(value) => void saveStatus(value as (typeof ORDER_STATUSES)[number])}
             disabled={busy || nextStatuses.length === 0}
           >
-            <SelectTrigger className="h-9 min-h-9 w-40 text-xs" aria-label={`Status for ${order.reference}`}>
+            <SelectTrigger className="h-9 min-h-9 w-40 rounded-full text-xs" aria-label={`Status for ${order.reference}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -156,9 +218,9 @@ function OrderRow({ order, compact = false }: { order: AdminOrder; compact?: boo
         )}
       </TableCell>
       {compact ? null : (
-        <TableCell className="text-right">
+        <TableCell className="text-center">
           {cancellable ? (
-            <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void cancel()}>
+            <Button type="button" variant="ghost" size="sm" className="h-9 rounded-full" disabled={busy} onClick={() => void cancel()}>
               Cancel order
             </Button>
           ) : (

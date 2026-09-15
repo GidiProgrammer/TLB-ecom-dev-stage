@@ -13,13 +13,5 @@ test.describe("CP36 visual foundation", () => {
     const header = page.locator("header");
     await expect(header.getByRole("link", { name: /^Cart/ })).toBeVisible();
     await expect(header.getByRole("link", { name: /^Quote/ })).toBeVisible();
-    await expect(
-      page.getByText("Order — buy from listed catalogue pricing.", { exact: false }).first(),
-    ).toBeVisible();
-    await expect(
-      page.getByText("Quote — request pricing for items or quantities that need a quotation.", {
-        exact: false,
-      }).first(),
-    ).toBeVisible();
   });
 });

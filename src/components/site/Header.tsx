@@ -1,12 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, ShoppingCart, FileText, User, Phone } from "lucide-react";
-import { COMPANY } from "@/lib/catalog-utils";
+import { Menu, Search, ShoppingCart, FileText, User } from "lucide-react";
 import { useCategories } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/site/BrandLogo";
-import { CommerceExplainer } from "@/components/site/CommerceExplainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,6 +35,7 @@ const publicNav = [
 ] as const;
 
 export function Header() {
+  const headerRef = useRef<HTMLElement>(null);
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
   const [megaOpen, setMegaOpen] = useState(false);
@@ -48,6 +47,21 @@ export function Header() {
   const location = useRouterState({
     select: (s) => ({ pathname: s.location.pathname, search: s.location.searchStr }),
   });
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const sync = () => {
+      document.documentElement.style.setProperty("--site-header-height", `${el.offsetHeight}px`);
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty("--site-header-height");
+    };
+  }, []);
 
   useEffect(() => {
     if (location.pathname !== "/shop") return;
@@ -65,19 +79,8 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-card">
+    <header ref={headerRef} className="sticky top-0 z-50 border-b border-border bg-card">
       <div className="h-0.5 bg-gold" aria-hidden />
-      <div className="bg-primary text-primary-foreground">
-        <div className="container-page flex min-h-11 items-center justify-between gap-3 py-1 text-xs">
-          <p className="hidden sm:block">Laboratory and scientific supplies from Accra</p>
-          <a
-            href={`tel:${COMPANY.phone.replace(/\s/g, "")}`}
-            className="inline-flex min-h-11 items-center gap-1.5 font-medium"
-          >
-            <Phone className="h-3.5 w-3.5" aria-hidden /> {COMPANY.phone}
-          </a>
-        </div>
-      </div>
 
       <div className="container-page flex min-h-14 items-center gap-3 py-2">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -119,7 +122,6 @@ export function Header() {
                 </Link>
               ))}
             </nav>
-            <CommerceExplainer className="mt-6 text-xs leading-relaxed text-muted-foreground" />
           </SheetContent>
         </Sheet>
 
@@ -243,12 +245,6 @@ export function Header() {
               </Link>
             ))}
           </nav>
-        </div>
-      </div>
-
-      <div className="border-t border-border bg-card">
-        <div className="container-page py-2">
-          <CommerceExplainer className="text-xs leading-relaxed text-muted-foreground" />
         </div>
       </div>
 

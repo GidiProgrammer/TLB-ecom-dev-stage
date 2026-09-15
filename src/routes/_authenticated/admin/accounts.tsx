@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminProfiles } from "@/lib/queries/admin";
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminLoading, AdminPageHeader, AdminPageStack } from "@/components/admin/AdminPageHeader";
 import { AccountWorkspace } from "@/components/admin/AccountWorkspace";
 import { privatePageHead } from "@/lib/seo";
 import { Route as AdminRoute } from "./route";
@@ -17,18 +17,18 @@ function AdminAccountsPage() {
   const profiles = useAdminProfiles(user?.id);
 
   return (
-    <div className="space-y-6">
+    <AdminPageStack>
       <AdminPageHeader
         title="Accounts"
         description="Institutional approval is limited to the admin role. Staff can view accounts."
       />
       {profiles.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading accounts…</p>
+        <AdminLoading label="Loading accounts" />
       ) : profiles.error ? (
         <p className="text-sm text-muted-foreground">Could not load accounts. Please try again.</p>
       ) : (
         <AccountWorkspace profiles={profiles.data ?? []} canApprove={access.isAdmin} />
       )}
-    </div>
+    </AdminPageStack>
   );
 }

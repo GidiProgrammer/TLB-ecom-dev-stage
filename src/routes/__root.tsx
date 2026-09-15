@@ -142,7 +142,7 @@ function RootComponent() {
               <a href="#main-content" className="skip-link">
                 Skip to content
               </a>
-              <main id="main-content" className="min-h-screen" tabIndex={-1}>
+              <main id="main-content" className="min-h-dvh" tabIndex={-1}>
                 <Outlet />
               </main>
             </>

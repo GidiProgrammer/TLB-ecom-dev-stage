@@ -4,7 +4,16 @@ import { toast } from "sonner";
 import { Constants } from "@/integrations/supabase/types";
 import { updateProfileApproval } from "@/lib/admin-ops";
 import type { AdminProfile } from "@/lib/queries/admin";
-import { AdminEmpty, AdminPanel, AdminSearch } from "@/components/admin/AdminPageHeader";
+import {
+  AdminCardToolbar,
+  AdminEmpty,
+  AdminIdentity,
+  AdminPagination,
+  AdminPanel,
+  AdminSearch,
+  AdminTable,
+  useAdminPage,
+} from "@/components/admin/AdminPageHeader";
 import { StatusBadge, approvalTone } from "@/components/admin/StatusBadge";
 import {
   Select,
@@ -14,7 +23,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -50,21 +58,25 @@ export function AccountWorkspace({
         .includes(term),
     );
   }, [profiles, q]);
+  const paging = useAdminPage(filtered, q);
 
   if (profiles.length === 0) {
     return (
-      <AdminPanel>
+      <AdminPanel fill>
         <AdminEmpty>No accounts yet.</AdminEmpty>
       </AdminPanel>
     );
   }
 
   return (
-    <AdminPanel>
-      <div className="border-b border-border px-4 py-3">
+    <AdminPanel fill>
+      <AdminCardToolbar>
         <AdminSearch value={q} onChange={setQ} label="Search accounts" />
-      </div>
-      <Table>
+      </AdminCardToolbar>
+      {filtered.length === 0 ? (
+        <AdminEmpty>No accounts match that search.</AdminEmpty>
+      ) : (
+        <AdminTable>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
@@ -75,11 +87,22 @@ export function AccountWorkspace({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.map((profile) => (
+          {paging.slice.map((profile) => (
             <ProfileRow key={profile.id} profile={profile} canApprove={canApprove} />
           ))}
         </TableBody>
-      </Table>
+        </AdminTable>
+      )}
+      {filtered.length === 0 ? null : (
+        <AdminPagination
+          page={paging.page}
+          pageCount={paging.pageCount}
+          start={paging.start}
+          end={paging.end}
+          total={paging.total}
+          onPage={paging.setPage}
+        />
+      )}
     </AdminPanel>
   );
 }
@@ -105,7 +128,9 @@ function ProfileRow({ profile, canApprove }: { profile: AdminProfile; canApprove
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{label}</TableCell>
+      <TableCell>
+        <AdminIdentity hint={profile.institution_name ?? undefined}>{label}</AdminIdentity>
+      </TableCell>
       <TableCell className="hidden capitalize sm:table-cell">{profile.account_type}</TableCell>
       <TableCell className="hidden md:table-cell">{profile.institution_name ?? "—"}</TableCell>
       <TableCell className="hidden whitespace-nowrap text-muted-foreground lg:table-cell">
@@ -118,7 +143,7 @@ function ProfileRow({ profile, canApprove }: { profile: AdminProfile; canApprove
             onValueChange={(value) => void saveStatus(value as (typeof APPROVAL_STATUSES)[number])}
             disabled={busy}
           >
-            <SelectTrigger className="h-9 min-h-9 w-36 text-xs" aria-label={`Approval for ${label}`}>
+            <SelectTrigger className="h-9 min-h-9 w-36 rounded-full text-xs" aria-label={`Approval for ${label}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

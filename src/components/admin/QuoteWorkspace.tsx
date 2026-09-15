@@ -1,12 +1,23 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Pencil } from "lucide-react";
 import { formatGHS } from "@/lib/catalog-utils";
 import { Constants } from "@/integrations/supabase/types";
 import { allowedQuoteTransitions, isTerminalQuoteStatus } from "@/lib/commerce-status";
 import { updateQuoteItemPrice, updateQuoteStatus } from "@/lib/admin-ops";
 import type { AdminQuote } from "@/lib/queries/admin";
-import { AdminEmpty, AdminPanel, AdminSearch } from "@/components/admin/AdminPageHeader";
+import {
+  AdminCardToolbar,
+  AdminEmpty,
+  AdminIconButton,
+  AdminIdentity,
+  AdminPagination,
+  AdminPanel,
+  AdminSearch,
+  AdminTable,
+  useAdminPage,
+} from "@/components/admin/AdminPageHeader";
 import { StatusBadge, quoteStatusTone } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -45,37 +55,43 @@ export function QuoteWorkspace({ quotes }: { quotes: AdminQuote[] }) {
         quote.status.toLowerCase().includes(term),
     );
   }, [quotes, q]);
+  const paging = useAdminPage(filtered, q);
 
   if (quotes.length === 0) {
     return (
-      <AdminPanel>
+      <AdminPanel fill>
         <AdminEmpty>No quote requests yet.</AdminEmpty>
       </AdminPanel>
     );
   }
 
   return (
-    <AdminPanel>
-      <div className="border-b border-border px-4 py-3">
-        <p className="mb-3 text-xs text-muted-foreground">
-          Accepted means the customer agreed to the quoted prices. It is not an order, payment, or
-          warehouse instruction.
-        </p>
-        <AdminSearch value={q} onChange={setQ} label="Search quotes" />
-      </div>
-      <Table>
+    <AdminPanel fill>
+      <AdminCardToolbar className="items-start">
+        <div className="w-full space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Accepted means the customer agreed to the quoted prices. It is not an order, payment, or
+            warehouse instruction.
+          </p>
+          <AdminSearch value={q} onChange={setQ} label="Search quotes" />
+        </div>
+      </AdminCardToolbar>
+      {filtered.length === 0 ? (
+        <AdminEmpty>No quotes match that search.</AdminEmpty>
+      ) : (
+        <AdminTable>
         <TableHeader>
           <TableRow>
             <TableHead>Reference</TableHead>
             <TableHead className="hidden md:table-cell">Created</TableHead>
             <TableHead className="hidden sm:table-cell">Contact</TableHead>
-            <TableHead className="text-right">Items</TableHead>
+            <TableHead className="text-center">Items</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Lines</TableHead>
+            <TableHead className="text-center">Lines</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.map((quote) => (
+          {paging.slice.map((quote) => (
             <QuoteRow
               key={quote.id}
               quote={quote}
@@ -84,7 +100,18 @@ export function QuoteWorkspace({ quotes }: { quotes: AdminQuote[] }) {
             />
           ))}
         </TableBody>
-      </Table>
+        </AdminTable>
+      )}
+      {filtered.length === 0 ? null : (
+        <AdminPagination
+          page={paging.page}
+          pageCount={paging.pageCount}
+          start={paging.start}
+          end={paging.end}
+          total={paging.total}
+          onPage={paging.setPage}
+        />
+      )}
     </AdminPanel>
   );
 }
@@ -120,12 +147,14 @@ function QuoteRow({
   return (
     <>
       <TableRow>
-        <TableCell className="font-medium">{quote.reference}</TableCell>
+        <TableCell>
+          <AdminIdentity hint={quote.contact_name ?? undefined}>{quote.reference}</AdminIdentity>
+        </TableCell>
         <TableCell className="hidden whitespace-nowrap text-muted-foreground md:table-cell">
           {new Date(quote.created_at).toLocaleString("en-GB")}
         </TableCell>
         <TableCell className="hidden sm:table-cell">{quote.contact_name ?? "—"}</TableCell>
-        <TableCell className="text-right tabular-nums">{quote.quote_items.length}</TableCell>
+        <TableCell className="text-center tabular-nums">{quote.quote_items.length}</TableCell>
         <TableCell>
           {terminal ? (
             <StatusBadge tone={quoteStatusTone(quote.status)}>{quote.status}</StatusBadge>
@@ -135,7 +164,7 @@ function QuoteRow({
               onValueChange={(value) => void saveStatus(value as (typeof QUOTE_STATUSES)[number])}
               disabled={busy || nextStatuses.length === 0}
             >
-              <SelectTrigger className="h-9 min-h-9 w-36 text-xs" aria-label={`Status for ${quote.reference}`}>
+              <SelectTrigger className="h-9 min-h-9 w-36 rounded-full text-xs" aria-label={`Status for ${quote.reference}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -151,16 +180,20 @@ function QuoteRow({
             </Select>
           )}
         </TableCell>
-        <TableCell className="text-right">
-          <Button type="button" variant="outline" size="sm" onClick={onToggle}>
-            {expanded ? "Hide items" : "Edit prices"}
-          </Button>
+        <TableCell className="text-center">
+          <AdminIconButton
+            label={expanded ? `Hide items for ${quote.reference}` : `Edit prices for ${quote.reference}`}
+            aria-expanded={expanded}
+            onClick={onToggle}
+          >
+            <Pencil />
+          </AdminIconButton>
         </TableCell>
       </TableRow>
       {expanded ? (
         <TableRow>
-          <TableCell colSpan={6} className="bg-muted/40">
-            <ul className="space-y-2 py-2">
+          <TableCell colSpan={6} className="bg-neutral-50">
+            <ul className="space-y-2 px-1 py-2">
               {quote.quote_items.map((item) => (
                 <QuoteItemPriceRow
                   key={item.id}
@@ -225,7 +258,7 @@ function QuoteItemPriceRow({
         disabled={closed || busy}
         className="h-9 min-h-9 w-28"
       />
-      <Button size="sm" variant="outline" disabled={closed || busy} onClick={() => void save()}>
+      <Button size="sm" variant="ghost" className="h-9 rounded-full" disabled={closed || busy} onClick={() => void save()}>
         Save price
       </Button>
     </li>
