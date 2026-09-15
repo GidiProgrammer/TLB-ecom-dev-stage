@@ -30,7 +30,7 @@ const values = [
 function About() {
   return (
     <div>
-      <section className="hero-surface text-primary-foreground">
+      <section className="bg-primary text-primary-foreground">
         <div className="container-page grid items-center gap-10 py-16 lg:grid-cols-2">
           <div>
             <h1 className="font-display text-4xl font-extrabold leading-tight">About TLB Enterprise</h1>

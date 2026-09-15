@@ -134,7 +134,7 @@ function AuthPage() {
 
   return (
     <div className="container-page grid gap-10 py-12 lg:grid-cols-[1fr_1.1fr]">
-      <div className="hidden rounded-lg hero-surface p-10 text-primary-foreground lg:block">
+      <div className="hidden rounded-lg bg-primary p-10 text-primary-foreground lg:block">
         <FlaskConical className="h-8 w-8" />
         <h1 className="mt-6 font-display text-3xl font-extrabold leading-tight">
           Accounts built for laboratories

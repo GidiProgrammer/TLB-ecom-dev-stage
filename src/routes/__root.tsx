@@ -100,7 +100,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
@@ -133,8 +133,11 @@ function RootComponent() {
       <AuthProvider>
         <StoreProvider>
           <div className="flex min-h-screen flex-col">
+            <a href="#main-content" className="skip-link">
+              Skip to content
+            </a>
             <Header />
-            <main className="flex-1">
+            <main id="main-content" className="flex-1" tabIndex={-1}>
               {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
               <Outlet />
             </main>

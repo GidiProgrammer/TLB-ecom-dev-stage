@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, ShoppingCart, FileText, FlaskConical, User, Phone } from "lucide-react";
+import { Menu, Search, ShoppingCart, FileText, User, Phone } from "lucide-react";
 import { COMPANY } from "@/lib/catalog-utils";
 import { useCategories } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
+import { CommerceExplainer } from "@/components/site/CommerceExplainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,7 +21,7 @@ import { cn } from "@/lib/utils";
 function CountBadge({ count }: { count: number }) {
   if (!count) return null;
   return (
-    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground">
+    <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-gold px-1 text-[11px] font-semibold text-gold-foreground">
       {count}
     </span>
   );
@@ -63,25 +64,24 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background">
-      <div className="bg-primary-dark text-primary-foreground">
-        <div className="container-page flex h-9 items-center justify-between text-xs">
-          <p className="hidden sm:block">Laboratory and scientific supplies from Accra, with delivery arranged after we confirm your order</p>
-          <div className="flex items-center gap-4">
-            <a href={`tel:${COMPANY.phone.replace(/\s/g, "")}`} className="inline-flex items-center gap-1.5">
-              <Phone className="h-3.5 w-3.5" /> {COMPANY.phone}
-            </a>
-            <a href={`mailto:${COMPANY.email}`} className="hidden md:inline">
-              {COMPANY.email}
-            </a>
-          </div>
+    <header className="sticky top-0 z-50 border-b border-border bg-card">
+      <div className="h-0.5 bg-gold" aria-hidden />
+      <div className="bg-primary text-primary-foreground">
+        <div className="container-page flex min-h-11 items-center justify-between gap-3 py-1 text-xs">
+          <p className="hidden sm:block">Laboratory and scientific supplies from Accra</p>
+          <a
+            href={`tel:${COMPANY.phone.replace(/\s/g, "")}`}
+            className="inline-flex min-h-11 items-center gap-1.5 font-medium"
+          >
+            <Phone className="h-3.5 w-3.5" aria-hidden /> {COMPANY.phone}
+          </a>
         </div>
       </div>
 
-      <div className="container-page flex h-16 items-center gap-3">
+      <div className="container-page flex min-h-14 items-center gap-3 py-2">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
+            <Button variant="outline" size="icon" className="min-h-11 min-w-11 lg:hidden" aria-label="Open menu">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
@@ -89,7 +89,7 @@ export function Header() {
             <SheetTitle className="absolute h-px w-px overflow-hidden whitespace-nowrap p-0 [clip:rect(0,0,0,0)]">
               Menu
             </SheetTitle>
-            <p className="font-display text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Categories
             </p>
             <nav className="mt-3 flex flex-col" aria-label="Product categories">
@@ -99,37 +99,38 @@ export function Header() {
                   to="/shop"
                   search={{ category: c.slug }}
                   onClick={() => setMobileOpen(false)}
-                  className="min-h-11 border-b border-border py-2.5 text-sm"
+                  className="flex min-h-11 items-center border-b border-border text-sm"
                 >
                   {c.name}
                 </Link>
               ))}
             </nav>
-            <nav className="mt-6 flex flex-col gap-2 text-sm" aria-label="Site">
+            <nav className="mt-6 flex flex-col text-sm" aria-label="Site">
               {publicNav.map((l) => (
-                <Link key={l.to} to={l.to} onClick={() => setMobileOpen(false)} className="min-h-11 py-2">
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex min-h-11 items-center"
+                >
                   {l.label}
                 </Link>
               ))}
             </nav>
+            <CommerceExplainer className="mt-6 text-xs leading-relaxed text-muted-foreground" />
           </SheetContent>
         </Sheet>
 
-        <Link to="/" className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded bg-primary text-primary-foreground">
-            <FlaskConical className="h-5 w-5" />
-          </span>
-          <span className="leading-none">
-            <span className="block font-display text-lg font-extrabold tracking-tight">TLB</span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Enterprise
-            </span>
+        <Link to="/" className="flex min-h-11 items-center">
+          <span className="leading-tight">
+            <span className="block text-lg font-semibold tracking-tight text-primary">TLB Enterprise</span>
+            <span className="block text-[11px] font-medium text-muted-foreground">Laboratory supplies, Accra</span>
           </span>
         </Link>
 
-        <form onSubmit={submit} className="ml-2 hidden flex-1 items-center md:flex">
+        <form onSubmit={submit} className="ml-2 hidden min-h-11 flex-1 items-center md:flex">
           <Select value={cat} onValueChange={setCat}>
-            <SelectTrigger className="w-44 rounded-r-none border-r-0 bg-secondary">
+            <SelectTrigger className="h-11 min-h-11 w-44 rounded-r-none border-r-0 bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -147,37 +148,41 @@ export function Header() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search reagents, glassware, equipment…"
             aria-label="Search products"
-            className="rounded-none"
+            className="h-11 min-h-11 rounded-none"
           />
-          <Button type="submit" className="rounded-l-none bg-accent text-accent-foreground hover:bg-accent/90" aria-label="Search">
-            <Search className="h-4 w-4" />
+          <Button type="submit" className="h-11 min-h-11 rounded-l-none px-4">
+            <Search className="h-4 w-4" aria-hidden />
+            Search
           </Button>
         </form>
 
-        <div className="ml-auto flex items-center gap-1">
-          <Button asChild variant="ghost" size="icon" className="relative" aria-label="Quote list">
+        <nav className="ml-auto flex items-center gap-1" aria-label="Account and commerce">
+          <Button asChild variant="ghost" className="relative h-11 min-h-11 gap-1.5 px-2.5">
             <Link to="/quote">
-              <FileText className="h-5 w-5" />
+              <FileText className="h-4 w-4" aria-hidden />
+              Quote
               <CountBadge count={quoteCount} />
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="icon" className="relative" aria-label="Cart">
+          <Button asChild variant="ghost" className="relative h-11 min-h-11 gap-1.5 px-2.5">
             <Link to="/cart">
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-4 w-4" aria-hidden />
+              Cart
               <CountBadge count={cartCount} />
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="sm" className="gap-1.5">
+          <Button asChild variant="outline" className="h-11 min-h-11 gap-1.5 px-3">
             <Link to={user ? "/account" : "/auth"} activeOptions={{ exact: true }}>
-              <User className="h-4 w-4" />
+              <User className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">{user ? "Account" : "Sign in"}</span>
+              <span className="sm:hidden">{user ? "Account" : "Sign in"}</span>
             </Link>
           </Button>
-        </div>
+        </nav>
       </div>
 
-      <div className="border-t border-border bg-secondary/60">
-        <div className="container-page flex h-11 items-center gap-1 text-sm">
+      <div className="border-t border-border bg-muted">
+        <div className="container-page flex min-h-11 items-center gap-2 text-sm">
           <div
             className="relative"
             onMouseEnter={() => setMegaOpen(true)}
@@ -195,15 +200,15 @@ export function Header() {
               onKeyDown={(e) => {
                 if (e.key === "Escape") setMegaOpen(false);
               }}
-              className="flex h-11 items-center gap-2 bg-primary px-4 font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex min-h-11 items-center gap-2 border-r border-border px-3 font-semibold text-foreground hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <Menu className="h-4 w-4" /> Shop by category
+              <Menu className="h-4 w-4" aria-hidden /> Shop by category
             </button>
             <div
               id="category-menu"
               hidden={!megaOpen}
               className={cn(
-                "absolute left-0 top-11 z-50 w-[min(64rem,90vw)] rounded-b-md border border-border bg-popover p-6 shadow-pop",
+                "absolute left-0 top-11 z-50 w-[min(64rem,90vw)] border border-border bg-popover p-6 shadow-pop",
                 megaOpen ? "block" : "hidden",
               )}
             >
@@ -214,7 +219,7 @@ export function Header() {
                       to="/shop"
                       search={{ category: c.slug }}
                       onClick={() => setMegaOpen(false)}
-                      className="font-display text-sm font-bold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="text-sm font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {c.name}
                     </Link>
@@ -227,12 +232,12 @@ export function Header() {
             </div>
           </div>
 
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             {publicNav.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
-                className="rounded px-3 py-1.5 font-medium text-secondary-foreground hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex min-h-11 items-center rounded px-3 font-medium text-foreground hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 activeProps={{ className: "text-primary" }}
               >
                 {l.label}
@@ -242,16 +247,24 @@ export function Header() {
         </div>
       </div>
 
-      <form onSubmit={submit} className="container-page flex items-center gap-2 py-2 md:hidden">
+      <div className="border-t border-border bg-card">
+        <div className="container-page py-2">
+          <CommerceExplainer className="text-xs leading-relaxed text-muted-foreground" />
+        </div>
+      </div>
+
+      <form onSubmit={submit} className="container-page flex items-center gap-2 pb-2 md:hidden">
         <Input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search products…"
           aria-label="Search products"
+          className="h-11 min-h-11"
         />
-        <Button type="submit" size="icon" className="bg-accent text-accent-foreground hover:bg-accent/90" aria-label="Search">
-          <Search className="h-4 w-4" />
+        <Button type="submit" className="h-11 min-h-11 min-w-11 px-3">
+          <Search className="h-4 w-4" aria-hidden />
+          <span className="sr-only">Search</span>
         </Button>
       </form>
     </header>

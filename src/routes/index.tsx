@@ -48,9 +48,8 @@ function Home() {
 
   return (
     <>
-      <section className="hero-surface relative overflow-hidden text-primary-foreground">
-        <div className="grid-lines absolute inset-0" aria-hidden />
-        <div className="container-page relative grid items-center gap-10 py-16 lg:grid-cols-2 lg:py-24">
+      <section className="bg-primary text-primary-foreground">
+        <div className="container-page grid items-center gap-10 py-16 lg:grid-cols-2 lg:py-24">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
               <FlaskConical className="h-3.5 w-3.5" /> Laboratory supplies from Accra
@@ -64,7 +63,7 @@ function Home() {
               Ghana.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button asChild size="lg" className="bg-card text-primary hover:bg-card/90">
                 <Link to="/shop">
                   Browse the catalogue <ArrowRight className="h-4 w-4" />
                 </Link>
