@@ -157,12 +157,18 @@ describe("client / security contract", () => {
     assert.match(orders, /create_order_with_items/);
     assert.match(orders, /p_submission_nonce: data\.submissionNonce/);
     assert.match(orders, /enqueueOrderCreatedFromRecord/);
+    assert.match(orders, /createOrderCreatedNotification/);
+    assert.match(orders, /channel: "transactional-email"/);
+    assert.match(orders, /channel: "customer-notifications"/);
+    assert.match(quotes, /channel: "transactional-email"/);
+    assert.match(quotes, /channel: "customer-notifications"/);
     assert.match(orders, /notifyAfterCommerceCommit/);
     assert.match(orders, /shippingEmail: order\?\.shipping_email/);
     assert.match(quotes, /requireSupabaseAuth/);
     assert.match(quotes, /create_quote_with_items/);
     assert.match(quotes, /p_submission_nonce: data\.submissionNonce/);
     assert.match(quotes, /enqueueQuoteCreatedFromRecord/);
+    assert.match(quotes, /createQuoteSubmittedNotification/);
     assert.match(quotes, /contactEmail: quote\?\.contact_email/);
     assert.match(quotes, /export const acceptQuote/);
     assert.match(quotes, /accept_quote/);
@@ -186,7 +192,9 @@ describe("client / security contract", () => {
     assert.match(adminOps, /shipping_email/);
     assert.match(adminOps, /contact_email/);
     assert.match(adminOps, /if \(!access\.isAdmin\)/);
-    assert.match(adminOps, /enqueueProfileApprovalFromTransition/);
+    assert.match(adminOps, /createOrderLifecycleNotification/);
+    assert.match(adminOps, /createQuoteLifecycleNotification/);
+    assert.match(adminOps, /createProfileApprovalNotification/);
     assert.match(adminOps, /auth\.admin\.getUserById/);
     assert.match(adminOps, /existing\.approval_status === data\.approvalStatus/);
 

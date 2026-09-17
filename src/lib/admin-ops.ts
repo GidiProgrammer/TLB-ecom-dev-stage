@@ -53,7 +53,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
 
     const { data: existing, error: loadError } = await supabaseAdmin
       .from("orders")
-      .select("id, reference, status, shipping_email")
+      .select("id, reference, status, shipping_email, user_id")
       .eq("id", data.orderId)
       .maybeSingle();
 
@@ -76,7 +76,7 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
       .update({ status: data.status })
       .eq("id", data.orderId)
       .eq("status", existing.status)
-      .select("id, reference, status, shipping_email")
+      .select("id, reference, status, shipping_email, user_id")
       .maybeSingle();
 
     if (error) {
@@ -91,15 +91,35 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     const { enqueueOrderLifecycleFromTransition, notifyAfterCommerceCommit } = await import(
       "@/server/mail/commerce"
     );
+    const { createOrderLifecycleNotification, runAfterCommerceCommit } = await import(
+      "@/server/notifications/commerce"
+    );
 
     return notifyAfterCommerceCommit(result, () =>
-      enqueueOrderLifecycleFromTransition({
-        id: row.id,
-        reference: row.reference,
-        shippingEmail: row.shipping_email,
-        previousStatus: existing.status,
-        nextStatus: row.status,
-      }),
+      runAfterCommerceCommit([
+        {
+          channel: "transactional-email",
+          run: () =>
+            enqueueOrderLifecycleFromTransition({
+              id: row.id,
+              reference: row.reference,
+              shippingEmail: row.shipping_email,
+              previousStatus: existing.status,
+              nextStatus: row.status,
+            }),
+        },
+        {
+          channel: "customer-notifications",
+          run: () =>
+            createOrderLifecycleNotification({
+              id: row.id,
+              userId: row.user_id,
+              reference: row.reference,
+              previousStatus: existing.status,
+              nextStatus: row.status,
+            }),
+        },
+      ]),
     );
   });
 
@@ -116,7 +136,7 @@ export const cancelOrder = createServerFn({ method: "POST" })
 
     const { data: existing, error: loadError } = await supabaseAdmin
       .from("orders")
-      .select("id, reference, status, shipping_email")
+      .select("id, reference, status, shipping_email, user_id")
       .eq("id", data.orderId)
       .maybeSingle();
 
@@ -165,15 +185,35 @@ export const cancelOrder = createServerFn({ method: "POST" })
     const { enqueueOrderLifecycleFromTransition, notifyAfterCommerceCommit } = await import(
       "@/server/mail/commerce"
     );
+    const { createOrderLifecycleNotification, runAfterCommerceCommit } = await import(
+      "@/server/notifications/commerce"
+    );
 
     return notifyAfterCommerceCommit(cancelled, () =>
-      enqueueOrderLifecycleFromTransition({
-        id: String(result.order_id),
-        reference: cancelled.reference,
-        shippingEmail: existing.shipping_email,
-        previousStatus,
-        nextStatus: "cancelled",
-      }),
+      runAfterCommerceCommit([
+        {
+          channel: "transactional-email",
+          run: () =>
+            enqueueOrderLifecycleFromTransition({
+              id: String(result.order_id),
+              reference: cancelled.reference,
+              shippingEmail: existing.shipping_email,
+              previousStatus,
+              nextStatus: "cancelled",
+            }),
+        },
+        {
+          channel: "customer-notifications",
+          run: () =>
+            createOrderLifecycleNotification({
+              id: String(result.order_id),
+              userId: existing.user_id,
+              reference: cancelled.reference,
+              previousStatus,
+              nextStatus: "cancelled",
+            }),
+        },
+      ]),
     );
   });
 
@@ -186,7 +226,7 @@ export const updateQuoteStatus = createServerFn({ method: "POST" })
 
     const { data: existing, error: loadError } = await supabaseAdmin
       .from("quotes")
-      .select("id, reference, status, contact_email")
+      .select("id, reference, status, contact_email, user_id")
       .eq("id", data.quoteId)
       .maybeSingle();
 
@@ -209,7 +249,7 @@ export const updateQuoteStatus = createServerFn({ method: "POST" })
       .update({ status: data.status })
       .eq("id", data.quoteId)
       .eq("status", existing.status)
-      .select("id, reference, status, contact_email")
+      .select("id, reference, status, contact_email, user_id")
       .maybeSingle();
 
     if (error) {
@@ -224,15 +264,35 @@ export const updateQuoteStatus = createServerFn({ method: "POST" })
     const { enqueueQuoteLifecycleFromTransition, notifyAfterCommerceCommit } = await import(
       "@/server/mail/commerce"
     );
+    const { createQuoteLifecycleNotification, runAfterCommerceCommit } = await import(
+      "@/server/notifications/commerce"
+    );
 
     return notifyAfterCommerceCommit(result, () =>
-      enqueueQuoteLifecycleFromTransition({
-        id: row.id,
-        reference: row.reference,
-        contactEmail: row.contact_email,
-        previousStatus: existing.status,
-        nextStatus: row.status,
-      }),
+      runAfterCommerceCommit([
+        {
+          channel: "transactional-email",
+          run: () =>
+            enqueueQuoteLifecycleFromTransition({
+              id: row.id,
+              reference: row.reference,
+              contactEmail: row.contact_email,
+              previousStatus: existing.status,
+              nextStatus: row.status,
+            }),
+        },
+        {
+          channel: "customer-notifications",
+          run: () =>
+            createQuoteLifecycleNotification({
+              id: row.id,
+              userId: row.user_id,
+              reference: row.reference,
+              previousStatus: existing.status,
+              nextStatus: row.status,
+            }),
+        },
+      ]),
     );
   });
 
@@ -367,14 +427,32 @@ export const updateProfileApproval = createServerFn({ method: "POST" })
     const { enqueueProfileApprovalFromTransition, notifyAfterCommerceCommit } = await import(
       "@/server/mail/commerce"
     );
+    const { createProfileApprovalNotification, runAfterCommerceCommit } = await import(
+      "@/server/notifications/commerce"
+    );
 
     return notifyAfterCommerceCommit(result, () =>
-      enqueueProfileApprovalFromTransition({
-        id: row.id,
-        email: authData?.user?.email ?? null,
-        fullName: row.full_name,
-        previousStatus: existing.approval_status,
-        nextStatus: row.approval_status,
-      }),
+      runAfterCommerceCommit([
+        {
+          channel: "transactional-email",
+          run: () =>
+            enqueueProfileApprovalFromTransition({
+              id: row.id,
+              email: authData?.user?.email ?? null,
+              fullName: row.full_name,
+              previousStatus: existing.approval_status,
+              nextStatus: row.approval_status,
+            }),
+        },
+        {
+          channel: "customer-notifications",
+          run: () =>
+            createProfileApprovalNotification({
+              id: row.id,
+              previousStatus: existing.approval_status,
+              nextStatus: row.approval_status,
+            }),
+        },
+      ]),
     );
   });

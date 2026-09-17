@@ -76,12 +76,30 @@ export const createOrder = createServerFn({ method: "POST" })
     const { enqueueOrderCreatedFromRecord, notifyAfterCommerceCommit } = await import(
       "@/server/mail/commerce"
     );
+    const { createOrderCreatedNotification, runAfterCommerceCommit } = await import(
+      "@/server/notifications/commerce"
+    );
 
     return notifyAfterCommerceCommit(result, () =>
-      enqueueOrderCreatedFromRecord({
-        id,
-        reference: result.reference,
-        shippingEmail: order?.shipping_email ?? null,
-      }),
+      runAfterCommerceCommit([
+        {
+          channel: "transactional-email",
+          run: () =>
+            enqueueOrderCreatedFromRecord({
+              id,
+              reference: result.reference,
+              shippingEmail: order?.shipping_email ?? null,
+            }),
+        },
+        {
+          channel: "customer-notifications",
+          run: () =>
+            createOrderCreatedNotification({
+              id,
+              userId: order?.user_id ?? context.userId,
+              reference: result.reference,
+            }),
+        },
+      ]),
     );
   });

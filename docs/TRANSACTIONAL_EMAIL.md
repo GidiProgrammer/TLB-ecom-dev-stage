@@ -8,7 +8,7 @@ Pipeline:
 event → transactional_email_outbox → Vercel Cron → protected processor → MailDriver (capture | resend)
 ```
 
-Phase 1 shipped the outbox, mail adapter, and capture driver. Later phases wired commerce, lifecycle, profile, and contact events. CP32 adds a Resend production adapter, HTML/text templates, and a Bearer-protected Cron endpoint. No warehouse/ops mail. No in-app inbox. No password reset. No CP22 purchasing/quote policy. No payment provider. There is **no** `quote.accepted` email.
+Phase 1 shipped the outbox, mail adapter, and capture driver. Later phases wired commerce, lifecycle, profile, and contact events. CP32 adds a Resend production adapter, HTML/text templates, and a Bearer-protected Cron endpoint. No warehouse/ops mail. No password reset. No CP22 purchasing/quote policy. No payment provider. There is **no** `quote.accepted` email. Customer in-app notices live in `customer_notifications` (CP45) and are a separate delivery channel.
 
 ## Invariant
 

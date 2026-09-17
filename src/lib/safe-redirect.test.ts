@@ -14,6 +14,7 @@ describe("safeInternalPath", () => {
     assert.equal(safeInternalPath("https://evil.example"), "/account");
     assert.equal(safeInternalPath("//evil.example"), "/account");
     assert.equal(safeInternalPath("javascript:alert(1)"), "/account");
+    assert.equal(safeInternalPath("/javascript:alert(1)"), "/account");
     assert.equal(safeInternalPath("/\\evil.example"), "/account");
     assert.equal(safeInternalPath(""), "/account");
     assert.equal(safeInternalPath(null), "/account");

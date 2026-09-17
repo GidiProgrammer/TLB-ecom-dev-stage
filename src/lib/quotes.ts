@@ -84,13 +84,31 @@ export const createQuote = createServerFn({ method: "POST" })
     const { enqueueQuoteCreatedFromRecord, notifyAfterCommerceCommit } = await import(
       "@/server/mail/commerce"
     );
+    const { createQuoteSubmittedNotification, runAfterCommerceCommit } = await import(
+      "@/server/notifications/commerce"
+    );
 
     return notifyAfterCommerceCommit(created, () =>
-      enqueueQuoteCreatedFromRecord({
-        id: quoteId,
-        reference: created.reference,
-        contactEmail: quote?.contact_email ?? null,
-      }),
+      runAfterCommerceCommit([
+        {
+          channel: "transactional-email",
+          run: () =>
+            enqueueQuoteCreatedFromRecord({
+              id: quoteId,
+              reference: created.reference,
+              contactEmail: quote?.contact_email ?? null,
+            }),
+        },
+        {
+          channel: "customer-notifications",
+          run: () =>
+            createQuoteSubmittedNotification({
+              id: quoteId,
+              userId: quote?.user_id ?? context.userId,
+              reference: created.reference,
+            }),
+        },
+      ]),
     );
   });
 

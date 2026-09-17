@@ -1665,6 +1665,48 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          event_key: string
+          event_type: string
+          href: string | null
+          id: string
+          read_at: string | null
+          target_id: string | null
+          target_type: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          event_key: string
+          event_type: string
+          href?: string | null
+          id?: string
+          read_at?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          event_key?: string
+          event_type?: string
+          href?: string | null
+          id?: string
+          read_at?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactional_email_outbox: {
         Row: {
           attempt_count: number
@@ -1915,6 +1957,14 @@ export type Database = {
           p_staff_user_id: string
         }
         Returns: Json
+      }
+      mark_customer_notification_read: {
+        Args: { p_id: string; p_user_id: string }
+        Returns: number
+      }
+      mark_all_customer_notifications_read: {
+        Args: { p_user_id: string }
+        Returns: number
       }
     }
     Enums: {

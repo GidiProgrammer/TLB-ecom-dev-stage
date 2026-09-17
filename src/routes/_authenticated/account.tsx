@@ -32,6 +32,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { privatePageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/account")({
+  validateSearch: (search: Record<string, unknown>): { tab?: "orders" | "quotes"; ref?: string } => {
+    const parsed: { tab?: "orders" | "quotes"; ref?: string } = {};
+    if (search["tab"] === "quotes" || search["tab"] === "orders") parsed.tab = search["tab"];
+    if (typeof search["ref"] === "string" && search["ref"].length <= 80) parsed.ref = search["ref"];
+    return parsed;
+  },
   head: () =>
     privatePageHead(
       "Account dashboard — TLB Enterprise",
@@ -43,10 +49,12 @@ export const Route = createFileRoute("/_authenticated/account")({
 function Account() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const queryClient = useQueryClient();
   const profile = useAccountProfile(user?.id);
   const orders = useAccountOrders(user?.id);
   const quotes = useAccountQuotes(user?.id);
+  const tab = search.tab ?? "orders";
 
   const handleSignOut = async () => {
     await queryClient.cancelQueries();
@@ -64,6 +72,9 @@ function Account() {
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
+            <Link to="/account/notifications">Notifications</Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link to="/experiments">My experiments</Link>
           </Button>
           <Button variant="ghost" onClick={handleSignOut}>
@@ -74,7 +85,17 @@ function Account() {
 
       <ProfileSection query={profile} userId={user?.id} />
 
-      <Tabs defaultValue="orders" className="mt-10">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => {
+          const next: { tab: "orders" | "quotes"; ref?: string } = {
+            tab: value === "quotes" ? "quotes" : "orders",
+          };
+          if (search.ref) next.ref = search.ref;
+          navigate({ to: "/account", search: next });
+        }}
+        className="mt-10"
+      >
         <TabsList>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="quotes">Quote requests</TabsTrigger>
@@ -90,7 +111,7 @@ function Account() {
           ) : (
             <div className="divide-y divide-border rounded-md border border-border">
               {orders.data.map((o) => (
-                <OrderHistoryCard key={o.id} order={o} />
+                <OrderHistoryCard key={o.id} order={o} highlighted={search.ref === o.reference} />
               ))}
             </div>
           )}
@@ -106,7 +127,7 @@ function Account() {
           ) : (
             <div className="divide-y divide-border rounded-md border border-border">
               {quotes.data.map((q) => (
-                <QuoteHistoryCard key={q.id} quote={q} />
+                <QuoteHistoryCard key={q.id} quote={q} highlighted={search.ref === q.reference} />
               ))}
             </div>
           )}
@@ -303,10 +324,10 @@ function ProfileEditor({ profile, userId }: { profile: AccountProfile; userId: s
   );
 }
 
-function OrderHistoryCard({ order }: { order: AccountOrder }) {
+function OrderHistoryCard({ order, highlighted }: { order: AccountOrder; highlighted?: boolean }) {
   const shippingBits = [order.shipping_name, order.shipping_address, order.shipping_city].filter(Boolean);
   return (
-    <article className="p-4">
+    <article className={highlighted ? "border-l-4 border-l-primary p-4" : "p-4"}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="font-display text-sm font-bold">{order.reference}</h3>
@@ -357,7 +378,7 @@ function OrderHistoryCard({ order }: { order: AccountOrder }) {
   );
 }
 
-function QuoteHistoryCard({ quote }: { quote: AccountQuote }) {
+function QuoteHistoryCard({ quote, highlighted }: { quote: AccountQuote; highlighted?: boolean }) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const hasQuotedPrice = quote.quote_items.some((item) => item.quoted_price != null);
@@ -381,7 +402,7 @@ function QuoteHistoryCard({ quote }: { quote: AccountQuote }) {
   };
 
   return (
-    <article className="p-4">
+    <article className={highlighted ? "border-l-4 border-l-primary p-4" : "p-4"}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="font-display text-sm font-bold">{quote.reference}</h3>

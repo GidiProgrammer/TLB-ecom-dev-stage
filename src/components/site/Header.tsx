@@ -5,6 +5,7 @@ import { useCategories } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/site/BrandLogo";
+import { NotificationBell } from "@/components/site/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -172,6 +173,7 @@ export function Header() {
               <CountBadge count={cartCount} />
             </Link>
           </Button>
+          <NotificationBell />
           <Button asChild variant="outline" className="h-11 min-h-11 gap-1.5 px-3">
             <Link to={user ? "/account" : "/auth"} activeOptions={{ exact: true }}>
               <User className="h-4 w-4" aria-hidden />

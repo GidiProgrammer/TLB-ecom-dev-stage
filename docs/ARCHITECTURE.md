@@ -35,6 +35,8 @@ Customer-facing e-commerce site for TLB Enterprise (laboratory/scientific suppli
 
 **Customer transactional email** uses `transactional_email_outbox`, not warehouse `notifications`. See `docs/TRANSACTIONAL_EMAIL.md`. Mail code lives under `src/server/mail/` (never import from routes). After commerce RPCs commit, `order.created` / `quote.created` are enqueued. Staff status *transitions* enqueue quote quoted/declined and order shipped/cancelled/payment_failed. Admin-only `approval_status` transitions enqueue profile approved/rejected (account notice only; not CP22 rights). Public contact uses `submitContact` → `contact.submitted` to `CONTACT_RECIPIENT_EMAIL` (customer address is reply-to only). A protected HTTP processor (`/api/cron/transactional-email`) claims rows and delivers via capture or Resend.
 
+**Customer in-app notifications** use `customer_notifications` (not warehouse `notifications` and not the email outbox). Creation is service-role only after the same commerce commits. Customers may SELECT their own rows and mark them read via `mark_customer_notification_read` / `mark_all_customer_notifications_read` (JWT user id on the server). They cannot INSERT or change message/target fields.
+
 ## Environment variables
 
 See `.env.example` and [`VERCEL_DEPLOYMENT.md`](./VERCEL_DEPLOYMENT.md). Client-side (Vite-bundled, public): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`. Server-only (never expose): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `MAIL_DRIVER`, `MAIL_FROM`, `MAIL_REPLY_TO`, `MAIL_PROVIDER_API_KEY`, `CONTACT_RECIPIENT_EMAIL`, `CRON_SECRET`.

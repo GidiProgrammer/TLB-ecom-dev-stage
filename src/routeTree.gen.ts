@@ -28,6 +28,7 @@ import { Route as CheckoutConfirmedRouteImport } from './routes/checkout.confirm
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as QuoteIndexRouteImport } from './routes/quote.index'
 import { Route as QuoteConfirmedRouteImport } from './routes/quote.confirmed'
+import { Route as AuthenticatedAccountNotificationsRouteImport } from './routes/_authenticated/account.notifications'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAccountsRouteImport } from './routes/_authenticated/admin/accounts'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
@@ -131,6 +132,12 @@ const QuoteConfirmedRoute = QuoteConfirmedRouteImport.update({
   path: '/confirmed',
   getParentRoute: () => QuoteRoute,
 } as any)
+const AuthenticatedAccountNotificationsRoute =
+  AuthenticatedAccountNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedAccountRoute,
+  } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -184,7 +191,7 @@ export interface FileRoutesByFullPath {
   '/quote': typeof QuoteRouteWithChildren
   '/shop': typeof ShopRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
-  '/account': typeof AuthenticatedAccountRoute
+  '/account': typeof AuthenticatedAccountRouteWithChildren
   '/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/checkout/confirmed': typeof CheckoutConfirmedRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/quote/confirmed': typeof QuoteConfirmedRoute
   '/checkout/': typeof CheckoutIndexRoute
   '/quote/': typeof QuoteIndexRoute
+  '/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/admin/accounts': typeof AuthenticatedAdminAccountsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -208,7 +216,7 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/shop': typeof ShopRoute
-  '/account': typeof AuthenticatedAccountRoute
+  '/account': typeof AuthenticatedAccountRouteWithChildren
   '/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/checkout/confirmed': typeof CheckoutConfirmedRoute
@@ -216,6 +224,7 @@ export interface FileRoutesByTo {
   '/quote/confirmed': typeof QuoteConfirmedRoute
   '/checkout': typeof CheckoutIndexRoute
   '/quote': typeof QuoteIndexRoute
+  '/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/admin/accounts': typeof AuthenticatedAdminAccountsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -237,7 +246,7 @@ export interface FileRoutesById {
   '/quote': typeof QuoteRouteWithChildren
   '/shop': typeof ShopRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
-  '/_authenticated/account': typeof AuthenticatedAccountRoute
+  '/_authenticated/account': typeof AuthenticatedAccountRouteWithChildren
   '/_authenticated/experiments': typeof AuthenticatedExperimentsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/checkout/confirmed': typeof CheckoutConfirmedRoute
@@ -245,6 +254,7 @@ export interface FileRoutesById {
   '/quote/confirmed': typeof QuoteConfirmedRoute
   '/checkout/': typeof CheckoutIndexRoute
   '/quote/': typeof QuoteIndexRoute
+  '/_authenticated/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/_authenticated/admin/accounts': typeof AuthenticatedAdminAccountsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/quote/confirmed'
     | '/checkout/'
     | '/quote/'
+    | '/account/notifications'
     | '/admin/accounts'
     | '/admin/categories'
     | '/admin/orders'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/quote/confirmed'
     | '/checkout'
     | '/quote'
+    | '/account/notifications'
     | '/admin/accounts'
     | '/admin/categories'
     | '/admin/orders'
@@ -326,6 +338,7 @@ export interface FileRouteTypes {
     | '/quote/confirmed'
     | '/checkout/'
     | '/quote/'
+    | '/_authenticated/account/notifications'
     | '/_authenticated/admin/accounts'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/orders'
@@ -485,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuoteConfirmedRouteImport
       parentRoute: typeof QuoteRoute
     }
+    '/_authenticated/account/notifications': {
+      id: '/_authenticated/account/notifications'
+      path: '/notifications'
+      fullPath: '/account/notifications'
+      preLoaderRoute: typeof AuthenticatedAccountNotificationsRouteImport
+      parentRoute: typeof AuthenticatedAccountRoute
+    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/'
@@ -561,15 +581,27 @@ const AuthenticatedAdminRouteRouteWithChildren =
     AuthenticatedAdminRouteRouteChildren,
   )
 
+interface AuthenticatedAccountRouteChildren {
+  AuthenticatedAccountNotificationsRoute: typeof AuthenticatedAccountNotificationsRoute
+}
+
+const AuthenticatedAccountRouteChildren: AuthenticatedAccountRouteChildren = {
+  AuthenticatedAccountNotificationsRoute:
+    AuthenticatedAccountNotificationsRoute,
+}
+
+const AuthenticatedAccountRouteWithChildren =
+  AuthenticatedAccountRoute._addFileChildren(AuthenticatedAccountRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
-  AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
+  AuthenticatedAccountRoute: typeof AuthenticatedAccountRouteWithChildren
   AuthenticatedExperimentsRoute: typeof AuthenticatedExperimentsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
-  AuthenticatedAccountRoute: AuthenticatedAccountRoute,
+  AuthenticatedAccountRoute: AuthenticatedAccountRouteWithChildren,
   AuthenticatedExperimentsRoute: AuthenticatedExperimentsRoute,
 }
 
