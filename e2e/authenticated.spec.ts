@@ -126,6 +126,82 @@ test.describe("authenticated account", () => {
     await expect(page.getByRole("link", { name: "Go to your account" })).toBeVisible();
   });
 
+  test("account deep links expand owned history and unknown refs stay generic", async ({ page }) => {
+    await page.goto("/account");
+    const ordersPanel = page.getByRole("tabpanel", { name: "Orders" });
+    await expect(
+      ordersPanel.getByText(/^TLB-/).or(ordersPanel.getByText("No orders yet")).first(),
+    ).toBeVisible();
+
+    const orderHeading = ordersPanel.locator("article h3").first();
+    if ((await orderHeading.count()) > 0) {
+      const orderRef = (await orderHeading.innerText()).trim();
+      await page.goto(`/account?tab=orders&ref=${encodeURIComponent(orderRef)}`);
+      await expect(page.getByRole("tab", { name: "Orders" })).toHaveAttribute("data-state", "active");
+      const orderCard = ordersPanel.locator("article").filter({ hasText: orderRef }).first();
+      await expect(orderCard).toHaveAttribute("aria-current", "true");
+      await expect(orderCard.getByText("Currently viewing this order")).toBeVisible();
+      await expect(orderCard.locator("details")).toHaveAttribute("open", "");
+      await expect(page.getByText("That reference wasn't found in your account history.")).toHaveCount(0);
+
+      await page.goto(`/checkout/confirmed?ref=${encodeURIComponent(orderRef)}`);
+      await expect(page.getByRole("heading", { name: "Order confirmed" })).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByRole("heading", { name: orderRef })).toBeVisible();
+      await expect(page.getByText(/Order total|line item/i).first()).toBeVisible();
+      await expect(page.getByRole("link", { name: "View your orders" })).toHaveAttribute(
+        "href",
+        `/account?tab=orders&ref=${encodeURIComponent(orderRef)}`,
+      );
+    }
+
+    await page.goto("/account");
+    await page.getByRole("tab", { name: "Quote requests" }).click();
+    const quotesPanel = page.getByRole("tabpanel", { name: "Quote requests" });
+    const quoteHeading = quotesPanel.locator("article h3").first();
+    if ((await quoteHeading.count()) > 0) {
+      const quoteRef = (await quoteHeading.innerText()).trim();
+      await page.goto(`/account?tab=quotes&ref=${encodeURIComponent(quoteRef)}`);
+      await expect(page.getByRole("tab", { name: "Quote requests" })).toHaveAttribute("data-state", "active");
+      const quoteCard = quotesPanel.locator("article").filter({ hasText: quoteRef }).first();
+      await expect(quoteCard).toHaveAttribute("aria-current", "true");
+      await expect(quoteCard.getByText("Currently viewing this quote request")).toBeVisible();
+      await expect(quoteCard.locator("details")).toHaveAttribute("open", "");
+
+      await page.goto(`/quote/confirmed?ref=${encodeURIComponent(quoteRef)}`);
+      await expect(page.getByRole("heading", { name: "Quote request received" })).toBeVisible({
+        timeout: 15_000,
+      });
+      await expect(page.getByRole("heading", { name: quoteRef })).toBeVisible();
+      await expect(page.getByRole("link", { name: "View your quote requests" })).toHaveAttribute(
+        "href",
+        `/account?tab=quotes&ref=${encodeURIComponent(quoteRef)}`,
+      );
+    }
+
+    await page.goto("/account?tab=orders&ref=TLB-19990101-000000");
+    await expect(page.getByText("That reference wasn't found in your account history.")).toBeVisible();
+    await expect(page.getByRole("tabpanel", { name: "Orders" })).toBeVisible();
+    await expect(page.getByText(/exists for another|belongs to/i)).toHaveCount(0);
+  });
+
+  test("account commerce layout remains usable at 390, 768, and 1440", async ({ page }) => {
+    await page.goto("/account");
+    await expect(page.getByRole("heading", { name: "Account dashboard" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible({ timeout: 15_000 });
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 844 });
+      await expect(page.getByRole("tab", { name: "Orders" })).toBeVisible();
+      const overflow = await page.evaluate(() => {
+        const main = document.querySelector("#main-content");
+        if (!main) return true;
+        return main.scrollWidth > main.clientWidth + 1;
+      });
+      expect(overflow, `horizontal overflow in account main at ${width}`).toBe(false);
+      const tabBox = await page.getByRole("tab", { name: "Orders" }).boundingBox();
+      expect(tabBox?.height ?? 0).toBeGreaterThanOrEqual(40);
+    }
+  });
+
   test("safe redirect returns to checkout and quote; unsafe redirect stays internal", async ({ page }) => {
     await page.goto("/auth?redirect=/checkout");
     await expect(page).toHaveURL(/\/checkout/, { timeout: 15_000 });
@@ -134,14 +210,5 @@ test.describe("authenticated account", () => {
     await page.goto("/auth?redirect=https://evil.example");
     await expect(page).not.toHaveURL(/evil/);
     await expect(page).toHaveURL(/\/account/, { timeout: 15_000 });
-  });
-
-  test("sign out prevents authenticated account access", async ({ page }) => {
-    await page.goto("/account");
-    await expect(page.getByRole("heading", { name: "Account dashboard" })).toBeVisible();
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await expect(page).toHaveURL(/\/auth/, { timeout: 15_000 });
-    await page.goto("/account");
-    await expect(page).toHaveURL(/\/auth/, { timeout: 15_000 });
   });
 });

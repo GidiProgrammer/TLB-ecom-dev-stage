@@ -133,10 +133,11 @@ export function normalizeProfileUpdate(input: {
   return { full_name, phone, institution_name, institution_type };
 }
 
-export async function fetchAccountOrders(): Promise<AccountOrder[]> {
+export async function fetchAccountOrders(userId: string): Promise<AccountOrder[]> {
   const { data: orders, error } = await supabase
     .from("orders")
     .select(ORDER_COLUMNS)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
   const err = loadError("Could not load orders", error);
   if (err) throw err;
@@ -172,11 +173,15 @@ export async function fetchAccountOrders(): Promise<AccountOrder[]> {
   }));
 }
 
-export async function fetchOwnedOrderByReference(reference: string): Promise<AccountOrder | null> {
+export async function fetchOwnedOrderByReference(
+  reference: string,
+  userId: string,
+): Promise<AccountOrder | null> {
   const { data: order, error } = await supabase
     .from("orders")
     .select(ORDER_COLUMNS)
     .eq("reference", reference)
+    .eq("user_id", userId)
     .maybeSingle();
   const err = loadError("Could not load this order", error);
   if (err) throw err;
@@ -202,10 +207,11 @@ export async function fetchOwnedOrderByReference(reference: string): Promise<Acc
   };
 }
 
-export async function fetchAccountQuotes(): Promise<AccountQuote[]> {
+export async function fetchAccountQuotes(userId: string): Promise<AccountQuote[]> {
   const { data: quotes, error } = await supabase
     .from("quotes")
     .select(QUOTE_COLUMNS)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
   const err = loadError("Could not load quote requests", error);
   if (err) throw err;
@@ -239,11 +245,15 @@ export async function fetchAccountQuotes(): Promise<AccountQuote[]> {
   }));
 }
 
-export async function fetchOwnedQuoteByReference(reference: string): Promise<AccountQuote | null> {
+export async function fetchOwnedQuoteByReference(
+  reference: string,
+  userId: string,
+): Promise<AccountQuote | null> {
   const { data: quote, error } = await supabase
     .from("quotes")
     .select(QUOTE_COLUMNS)
     .eq("reference", reference)
+    .eq("user_id", userId)
     .maybeSingle();
   const err = loadError("Could not load this quote request", error);
   if (err) throw err;
@@ -279,7 +289,7 @@ export function useAccountOrders(userId: string | undefined) {
   return useQuery({
     queryKey: ["account-orders", userId],
     enabled: Boolean(userId),
-    queryFn: fetchAccountOrders,
+    queryFn: () => fetchAccountOrders(userId!),
   });
 }
 
@@ -287,6 +297,6 @@ export function useAccountQuotes(userId: string | undefined) {
   return useQuery({
     queryKey: ["account-quotes", userId],
     enabled: Boolean(userId),
-    queryFn: fetchAccountQuotes,
+    queryFn: () => fetchAccountQuotes(userId!),
   });
 }

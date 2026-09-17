@@ -65,3 +65,39 @@ export function quoteStatusLabel(status: Enums<"quote_status">) {
       return "In progress";
   }
 }
+
+/** Extra customer copy. Does not describe warehouse, delivery, or payment. */
+export function quoteStatusExplanation(status: Enums<"quote_status">) {
+  switch (status) {
+    case "submitted":
+      return "We have received this request. Quoted prices are not shown yet.";
+    case "reviewed":
+      return "Our team is reviewing this request. Quoted prices will appear here when they are ready.";
+    case "quoted":
+      return "Quoted prices are ready for your review. This is an estimate, not an invoice.";
+    case "accepted":
+      return "You have accepted these quoted prices. Acceptance does not create an order.";
+    case "declined":
+      return "This quotation was declined.";
+    default:
+      return null;
+  }
+}
+
+export function quoteLineEstimate(quantity: number, quotedPrice: number | null | undefined): number | null {
+  if (quotedPrice == null) return null;
+  return Number(quotedPrice) * quantity;
+}
+
+export function quoteQuotedTotal(
+  items: ReadonlyArray<{ quantity: number; quoted_price: number | null }>,
+): number | null {
+  if (!items.length) return null;
+  let total = 0;
+  for (const item of items) {
+    const line = quoteLineEstimate(item.quantity, item.quoted_price);
+    if (line == null) return null;
+    total += line;
+  }
+  return total;
+}

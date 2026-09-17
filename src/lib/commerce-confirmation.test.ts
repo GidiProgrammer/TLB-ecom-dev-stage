@@ -1,6 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  accountHistorySearch,
   commerceConfirmationPath,
   parseConfirmationSearch,
   parseOrderReference,
@@ -42,6 +43,17 @@ describe("commerce confirmation references", () => {
     });
     assert.deepEqual(parseConfirmationSearch("order", { ref: "https://evil.example" }), {});
     assert.deepEqual(parseConfirmationSearch("quote", {}), {});
+  });
+
+  test("account history search is tab and reference only", () => {
+    assert.deepEqual(accountHistorySearch("order", "TLB-20260915-AB12CD"), {
+      tab: "orders",
+      ref: "TLB-20260915-AB12CD",
+    });
+    assert.deepEqual(accountHistorySearch("quote", "QT-20260915-CD34EF"), {
+      tab: "quotes",
+      ref: "QT-20260915-CD34EF",
+    });
   });
 
   test("auth redirect search accepts confirmation URLs and rejects open redirects", () => {

@@ -10,7 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../../..");
 const sql = readFileSync(resolve(root, "supabase/migrations/20260914020000_tlb_quote_accept.sql"), "utf8");
 const quotesOps = readFileSync(resolve(root, "src/lib/quotes.ts"), "utf8");
-const accountUi = readFileSync(resolve(root, "src/routes/_authenticated/account.tsx"), "utf8");
+const accountUi = readFileSync(resolve(root, "src/components/site/AccountQuoteCard.tsx"), "utf8");
 const adminRoute = readFileSync(resolve(root, "src/components/admin/QuoteWorkspace.tsx"), "utf8");
 
 const owner = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";

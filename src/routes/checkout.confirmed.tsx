@@ -2,7 +2,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ConfirmationFound, ConfirmationMissing } from "@/components/site/CommerceConfirmation";
 import { useAuth } from "@/hooks/useAuth";
-import { commerceConfirmationPath, parseConfirmationSearch } from "@/lib/commerce-confirmation";
+import { accountHistorySearch, commerceConfirmationPath, parseConfirmationSearch } from "@/lib/commerce-confirmation";
+import { AccountOrderCard } from "@/components/site/AccountOrderCard";
 import { fetchOwnedOrderByReference } from "@/lib/queries/account";
 import { privatePageHead } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,7 @@ function CheckoutConfirmed() {
   const query = useQuery({
     queryKey: ["owned-order", user?.id, ref],
     enabled: Boolean(user?.id && ref),
-    queryFn: () => fetchOwnedOrderByReference(ref!),
+    queryFn: () => fetchOwnedOrderByReference(ref!, user!.id),
   });
 
   if (!ref) {
@@ -63,10 +64,16 @@ function CheckoutConfirmed() {
   }
 
   return (
-    <ConfirmationFound heading="Order confirmed" accountLabel="View your orders">
-      Your order was submitted successfully. Keep this reference: {query.data.reference}. You can also
-      find it in your account. No payment was taken online — we will confirm availability, delivery
-      cost and invoicing separately.
+    <ConfirmationFound
+      heading="Order confirmed"
+      accountLabel="View your orders"
+      accountSearch={accountHistorySearch("order", query.data.reference)}
+    >
+      <p className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
+        Your order was submitted successfully. Keep this reference: {query.data.reference}. No payment
+        was taken online — we will confirm availability, delivery cost and invoicing separately.
+      </p>
+      <AccountOrderCard order={query.data} forceOpen />
     </ConfirmationFound>
   );
 }

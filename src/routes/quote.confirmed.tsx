@@ -2,7 +2,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ConfirmationFound, ConfirmationMissing } from "@/components/site/CommerceConfirmation";
 import { useAuth } from "@/hooks/useAuth";
-import { commerceConfirmationPath, parseConfirmationSearch } from "@/lib/commerce-confirmation";
+import { accountHistorySearch, commerceConfirmationPath, parseConfirmationSearch } from "@/lib/commerce-confirmation";
+import { AccountQuoteCard } from "@/components/site/AccountQuoteCard";
 import { fetchOwnedQuoteByReference } from "@/lib/queries/account";
 import { privatePageHead } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,7 @@ function QuoteConfirmed() {
   const query = useQuery({
     queryKey: ["owned-quote", user?.id, ref],
     enabled: Boolean(user?.id && ref),
-    queryFn: () => fetchOwnedQuoteByReference(ref!),
+    queryFn: () => fetchOwnedQuoteByReference(ref!, user!.id),
   });
 
   if (!ref) {
@@ -64,10 +65,17 @@ function QuoteConfirmed() {
   }
 
   return (
-    <ConfirmationFound heading="Quote request received" accountLabel="View your quote requests">
-      Your request has been received. Keep this reference: {query.data.reference}. TLB will review the
-      list and provide pricing. You can view the request in Account. If your submission needs to be
-      retried, you can safely submit again.
+    <ConfirmationFound
+      heading="Quote request received"
+      accountLabel="View your quote requests"
+      accountSearch={accountHistorySearch("quote", query.data.reference)}
+    >
+      <p className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
+        Your request has been received. Keep this reference: {query.data.reference}. TLB will review
+        the list and provide pricing. If your submission needs to be retried, you can safely submit
+        again.
+      </p>
+      <AccountQuoteCard quote={query.data} forceOpen />
     </ConfirmationFound>
   );
 }

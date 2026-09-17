@@ -35,3 +35,10 @@ export function parseConfirmationSearch(kind: CommerceKind, search: Record<strin
   const parsed = parseCommerceReference(kind, search["ref"]);
   return parsed ? { ref: parsed } : {};
 }
+
+export function accountHistorySearch(kind: CommerceKind, reference: string): { tab: "orders" | "quotes"; ref: string } {
+  return {
+    tab: kind === "order" ? "orders" : "quotes",
+    ref: reference,
+  };
+}
