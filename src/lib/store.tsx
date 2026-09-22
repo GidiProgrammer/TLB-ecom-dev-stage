@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-export type LineItem = { id: string; qty: number };
+import { parseStoredCommerce, type LineItem } from "@/lib/store-storage";
+
+export type { LineItem };
 
 type StoreState = {
   cart: LineItem[];
@@ -25,10 +27,7 @@ const KEY = "tlb-store-v1";
 function readStorage(): { cart: LineItem[]; quote: LineItem[] } {
   if (typeof window === "undefined") return { cart: [], quote: [] };
   try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return { cart: [], quote: [] };
-    const parsed = JSON.parse(raw) as { cart?: LineItem[]; quote?: LineItem[] };
-    return { cart: parsed.cart ?? [], quote: parsed.quote ?? [] };
+    return parseStoredCommerce(window.localStorage.getItem(KEY));
   } catch {
     return { cart: [], quote: [] };
   }
