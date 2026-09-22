@@ -5,8 +5,9 @@ import { formatGHS, remainingPurchasableQty, stockLabel, unavailableReason, purc
 import type { CatalogProduct } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function ProductCard({ product }: { product: CatalogProduct }) {
+export function ProductCard({ product, className }: { product: CatalogProduct; className?: string }) {
   const { addToCart, addToQuote, cart } = useStore();
   const inCart = cart.find((line) => line.id === product.id)?.qty ?? 0;
   const remaining = remainingPurchasableQty(product.stock_quantity, inCart);
@@ -23,7 +24,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   };
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-md border border-border bg-card transition-shadow hover:shadow-card">
+    <article className={cn("group flex flex-col overflow-hidden rounded-md border border-border bg-card transition-shadow hover:shadow-card", className)}>
       <Link
         to="/product/$id"
         params={{ id: product.id }}

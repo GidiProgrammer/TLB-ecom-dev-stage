@@ -119,7 +119,7 @@ function Shop() {
           </header>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[16rem_1fr]">
-            <aside className="space-y-6">
+            <aside className="space-y-6 lg:sticky lg:top-[calc(var(--site-header-height)+40px)] lg:max-h-[calc(100dvh-var(--site-header-height)-40px)] lg:self-start lg:overflow-y-auto">
               <div>
                 <h2 className="font-display text-sm font-bold uppercase tracking-wide">Categories</h2>
                 <ul className="mt-3 space-y-1 text-sm">

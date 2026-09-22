@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, ShoppingCart, FileText, User } from "lucide-react";
+import { Mail, Menu, Phone, Search, ShoppingCart, FileText, User } from "lucide-react";
+import { COMPANY } from "@/lib/catalog-utils";
 import { useCategories } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -81,9 +82,31 @@ export function Header() {
 
   return (
     <header ref={headerRef} className="sticky top-0 z-50 border-b border-border bg-card">
-      <div className="h-0.5 bg-gold" aria-hidden />
+      <div className="bg-primary text-primary-foreground">
+        <div className="container-page flex min-h-9 flex-wrap items-center justify-between gap-x-4 text-xs">
+          <div className="flex flex-wrap items-center gap-x-4">
+            <a
+              href={`tel:${COMPANY.phone.replace(/\s/g, "")}`}
+              className="inline-flex min-h-11 items-center gap-1.5 hover:text-gold"
+            >
+              <Phone className="h-3.5 w-3.5" aria-hidden />
+              {COMPANY.phone}
+            </a>
+            <a
+              href={`mailto:${COMPANY.email}`}
+              className="hidden min-h-11 items-center gap-1.5 hover:text-gold sm:inline-flex"
+            >
+              <Mail className="h-3.5 w-3.5" aria-hidden />
+              {COMPANY.email}
+            </a>
+          </div>
+          <Link to="/contact" className="inline-flex min-h-11 items-center hover:text-gold">
+            Contact
+          </Link>
+        </div>
+      </div>
 
-      <div className="container-page flex min-h-14 items-center gap-3 py-2">
+      <div className="container-page flex min-h-16 items-center gap-3 py-2">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="min-h-11 min-w-11 lg:hidden" aria-label="Open menu">
@@ -130,13 +153,13 @@ export function Header() {
           <BrandLogo className="h-11" />
         </Link>
 
-        <form onSubmit={submit} className="ml-2 hidden min-h-11 flex-1 items-center md:flex">
+        <form onSubmit={submit} className="mx-auto hidden min-h-11 max-w-xl flex-1 items-center md:flex">
           <Select value={cat} onValueChange={setCat}>
-            <SelectTrigger className="h-11 min-h-11 w-44 rounded-r-none border-r-0 bg-muted">
+            <SelectTrigger className="h-11 min-h-11 w-28 shrink-0 rounded-r-none border-r-0 bg-muted">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All categories</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               {(categories ?? []).map((c) => (
                 <SelectItem key={c.slug} value={c.slug}>
                   {c.name}
@@ -148,33 +171,32 @@ export function Header() {
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search reagents, glassware, equipment…"
+            placeholder="Search for products…"
             aria-label="Search products"
             className="h-11 min-h-11 rounded-none"
           />
-          <Button type="submit" className="h-11 min-h-11 rounded-l-none px-4">
-            <Search className="h-4 w-4" aria-hidden />
+          <Button type="submit" className="h-11 min-h-11 rounded-l-none bg-gold px-5 text-gold-foreground hover:bg-gold/90">
             Search
           </Button>
         </form>
 
         <nav className="ml-auto flex items-center gap-1" aria-label="Account and commerce">
           <Button asChild variant="ghost" className="relative h-11 min-h-11 gap-1.5 px-2.5">
-            <Link to="/quote">
+            <Link to="/quote" aria-label="Quote">
               <FileText className="h-4 w-4" aria-hidden />
-              Quote
+              <span className="hidden sm:inline">Quote</span>
               <CountBadge count={quoteCount} />
             </Link>
           </Button>
           <Button asChild variant="ghost" className="relative h-11 min-h-11 gap-1.5 px-2.5">
-            <Link to="/cart">
+            <Link to="/cart" aria-label="Cart">
               <ShoppingCart className="h-4 w-4" aria-hidden />
-              Cart
+              <span className="hidden sm:inline">Cart</span>
               <CountBadge count={cartCount} />
             </Link>
           </Button>
           <NotificationBell />
-          <Button asChild variant="outline" className="h-11 min-h-11 gap-1.5 px-3">
+          <Button asChild className="h-11 min-h-11 gap-1.5 bg-gold px-3 text-gold-foreground hover:bg-gold/90">
             <Link to={user ? "/account" : "/auth"} activeOptions={{ exact: true }}>
               <User className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">{user ? "Account" : "Sign in"}</span>
@@ -184,7 +206,7 @@ export function Header() {
         </nav>
       </div>
 
-      <div className="border-t border-border bg-muted">
+      <div className="border-t border-border bg-card">
         <div className="container-page flex min-h-11 items-center gap-2 text-sm">
           <div
             className="relative"
@@ -203,7 +225,7 @@ export function Header() {
               onKeyDown={(e) => {
                 if (e.key === "Escape") setMegaOpen(false);
               }}
-              className="flex min-h-11 items-center gap-2 border-r border-border px-3 font-semibold text-foreground hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex min-h-11 items-center gap-2 border-r border-border px-3 font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Menu className="h-4 w-4" aria-hidden /> Shop by category
             </button>
@@ -240,7 +262,7 @@ export function Header() {
               <Link
                 key={l.to}
                 to={l.to}
-                className="inline-flex min-h-11 items-center rounded px-3 font-medium text-foreground hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex min-h-11 items-center rounded px-3 font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 activeProps={{ className: "text-primary" }}
               >
                 {l.label}
@@ -259,7 +281,7 @@ export function Header() {
           aria-label="Search products"
           className="h-11 min-h-11"
         />
-        <Button type="submit" className="h-11 min-h-11 min-w-11 px-3">
+        <Button type="submit" className="h-11 min-h-11 min-w-11 bg-gold px-3 text-gold-foreground hover:bg-gold/90">
           <Search className="h-4 w-4" aria-hidden />
           <span className="sr-only">Search</span>
         </Button>
