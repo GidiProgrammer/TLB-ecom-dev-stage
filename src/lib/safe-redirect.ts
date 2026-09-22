@@ -30,6 +30,18 @@ export function customerReturnPath(pathname: string, search = "", hash = ""): st
   return safeInternalPath(`${pathname}${suffix}${hashPart}`);
 }
 
+/**
+ * Supabase sign-up confirmation URL. A valid internal redirect is appended to
+ * the site origin. Missing or unsafe values stay on the origin only.
+ */
+export function signUpConfirmationUrl(origin: string, redirect: unknown): string {
+  const base = origin.replace(/\/$/, "");
+  if (typeof redirect !== "string" || redirect.trim().length === 0) return base;
+  const safe = safeInternalPath(redirect, "");
+  if (!safe) return base;
+  return `${base}${safe}`;
+}
+
 export function parseRedirectSearch(search: Record<string, unknown>): string | undefined {
   const raw = search["redirect"];
   if (typeof raw !== "string" || !raw) return undefined;

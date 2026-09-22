@@ -10,6 +10,17 @@ test("homepage loads", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Best sellers" })).toHaveCount(0);
 });
 
+test("hero controls stay available on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const tabs = page.getByRole("tablist", { name: "Hero slides" });
+  await expect(tabs).toBeVisible();
+  await expect(tabs.getByRole("tab", { selected: true })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Previous slide" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Next slide" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+});
+
 test("homepage does not overflow at 390, 768, or 1440", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "Glassware" })).toBeVisible({

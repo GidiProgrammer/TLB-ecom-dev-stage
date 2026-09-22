@@ -19,6 +19,14 @@ test.describe("shop catalogue", () => {
     await expect(page.getByRole("link", { name: /Methanol/i }).first()).toBeVisible({ timeout: 15_000 });
   });
 
+  test("search finds a product name that contains parentheses", async ({ page }) => {
+    await page.goto("/shop?q=Buffer%20Solution%20pH%207.00%20(colour%20coded)");
+    await expect(page.getByRole("link", { name: "Buffer Solution pH 7.00 (colour coded)", exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText("Could not load products")).toHaveCount(0);
+  });
+
   test("category filtering works", async ({ page }) => {
     await page.goto("/shop");
     await page.getByRole("button", { name: "Glassware" }).click();
@@ -128,6 +136,35 @@ test.describe("cart honesty", () => {
     await expect(page.getByRole("combobox", { name: "Sort products" })).toContainText("Name A–Z");
     await expect(page.getByRole("article").first()).toBeVisible();
     await expect(page.getByText(/^0 products$/)).toHaveCount(0);
+  });
+
+  test("quote shows a missing product and keeps submit disabled until it is removed", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "tlb-store-v1",
+        JSON.stringify({ cart: [], quote: [{ id: "missing-slug-xyz", qty: 1 }] }),
+      );
+    });
+    await page.goto("/quote");
+    await expect(
+      page.getByText("This product is no longer available. Remove it before submitting the quote request."),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Submit quote request" })).toBeDisabled();
+    await page.getByRole("button", { name: "Remove" }).click();
+    await expect(page.getByText("Your quote list is empty")).toBeVisible();
+  });
+
+  test("guest quote submit stays disabled", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "tlb-store-v1",
+        JSON.stringify({ cart: [], quote: [{ id: "ac-002", qty: 1 }] }),
+      );
+    });
+    await page.goto("/quote");
+    await expect(page.getByRole("link", { name: /Methanol/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Submit quote request" })).toBeDisabled();
+    await expect(page.getByRole("link", { name: "Sign in" }).first()).toBeVisible();
   });
 
   test("checkout shows a missing product and stays disabled until it is removed", async ({ page }) => {

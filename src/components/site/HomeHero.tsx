@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import heroLab from "@/assets/hero-lab.jpg";
@@ -42,15 +42,25 @@ const slides = [
 
 export function HomeHero() {
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const hovering = useRef(false);
+  const focused = useRef(false);
+  const pressing = useRef(false);
+
+  const syncPause = () => {
+    setPaused(hovering.current || focused.current || pressing.current);
+  };
 
   useEffect(() => {
+    if (paused) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
     const timer = window.setInterval(() => {
       setIndex((current) => (current + 1) % slides.length);
     }, 7000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [paused]);
 
   const slide = slides[index] ?? slides[0];
   if (!slide) return null;
@@ -73,7 +83,39 @@ export function HomeHero() {
   return (
     <section aria-labelledby="home-hero-heading" className="bg-muted pb-4 pt-4 md:pb-6 md:pt-5">
       <div className="container-page">
-        <div className="relative isolate overflow-hidden rounded-lg bg-primary text-white">
+        <div
+          ref={rootRef}
+          className="relative isolate overflow-hidden rounded-lg bg-primary text-white"
+          onMouseEnter={() => {
+            hovering.current = true;
+            syncPause();
+          }}
+          onMouseLeave={() => {
+            hovering.current = false;
+            syncPause();
+          }}
+          onPointerDown={() => {
+            pressing.current = true;
+            syncPause();
+          }}
+          onPointerUp={() => {
+            pressing.current = false;
+            syncPause();
+          }}
+          onPointerCancel={() => {
+            pressing.current = false;
+            syncPause();
+          }}
+          onFocus={() => {
+            focused.current = true;
+            syncPause();
+          }}
+          onBlur={(event) => {
+            if (rootRef.current?.contains(event.relatedTarget as Node | null)) return;
+            focused.current = false;
+            syncPause();
+          }}
+        >
           <div className="grid min-h-[22rem] md:grid-cols-2 lg:min-h-[28rem]">
             <div className="relative z-10 flex flex-col justify-center px-5 py-10 sm:px-10 lg:px-12">
               <p className="text-sm font-medium text-gold">{slide.kicker}</p>
@@ -138,7 +180,7 @@ export function HomeHero() {
             </div>
           </div>
           <div
-            className="absolute bottom-3 left-1/2 z-10 hidden -translate-x-1/2 gap-1 lg:flex"
+            className="absolute bottom-16 left-1/2 z-10 flex -translate-x-1/2 gap-1 lg:bottom-4"
             role="tablist"
             aria-label="Hero slides"
           >

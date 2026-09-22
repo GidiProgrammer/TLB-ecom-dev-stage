@@ -4,7 +4,7 @@ import { BrandLogo } from "@/components/site/BrandLogo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { parseRedirectSearch, safeInternalPath } from "@/lib/safe-redirect";
+import { parseRedirectSearch, safeInternalPath, signUpConfirmationUrl } from "@/lib/safe-redirect";
 import { privatePageHead } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,7 +85,7 @@ function AuthPage() {
       email: signUp.email,
       password: signUp.password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: signUpConfirmationUrl(window.location.origin, search.redirect),
         data: {
           full_name: signUp.fullName,
           phone: signUp.phone,

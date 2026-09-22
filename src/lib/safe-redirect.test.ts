@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { customerReturnPath, parseRedirectSearch, safeInternalPath } from "./safe-redirect.ts";
+import { customerReturnPath, parseRedirectSearch, safeInternalPath, signUpConfirmationUrl } from "./safe-redirect.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -45,6 +45,19 @@ describe("safeInternalPath", () => {
     assert.equal(customerReturnPath("https://evil.example"), "/account");
     assert.equal(customerReturnPath("//evil.example"), "/account");
     assert.equal(customerReturnPath("/account", "?redirect=https://evil.example"), "/account");
+  });
+
+  test("sign-up confirmation keeps a safe return path", () => {
+    assert.equal(signUpConfirmationUrl("https://tlb.example", "/checkout"), "https://tlb.example/checkout");
+    assert.equal(signUpConfirmationUrl("https://tlb.example/", "/quote"), "https://tlb.example/quote");
+    assert.equal(signUpConfirmationUrl("https://tlb.example", undefined), "https://tlb.example");
+    assert.equal(signUpConfirmationUrl("https://tlb.example", ""), "https://tlb.example");
+    assert.equal(signUpConfirmationUrl("https://tlb.example", "https://evil.example"), "https://tlb.example");
+    assert.equal(signUpConfirmationUrl("https://tlb.example", "//evil.example"), "https://tlb.example");
+    assert.equal(signUpConfirmationUrl("https://tlb.example", "/\\evil"), "https://tlb.example");
+    const auth = readFileSync(resolve(here, "../routes/auth.tsx"), "utf8");
+    assert.match(auth, /signUpConfirmationUrl/);
+    assert.doesNotMatch(auth, /emailRedirectTo:\s*window\.location\.origin/);
   });
 
   test("authenticated routes send a safe return path", () => {

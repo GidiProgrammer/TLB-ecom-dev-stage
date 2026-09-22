@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { FileText, ShoppingCart, FlaskConical, Check } from "lucide-react";
+import { FileText, ShoppingCart, Check } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS, remainingPurchasableQty, stockLabel, stockStatus, unavailableReason, purchaseUnavailableLabel, purchaseUnavailableMessage } from "@/lib/catalog-utils";
 import { fetchProductBySlug, useCategories, useRelatedProducts } from "@/lib/queries/products";
@@ -127,20 +127,7 @@ function ProductDetail() {
       </nav>
 
       <div className="mt-6 grid gap-10 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-lg border border-border bg-secondary">
-          <img
-            src={product.image}
-            alt={product.hasProductImage ? product.name : `Category illustration for ${product.name}`}
-            className="aspect-4/3 w-full object-cover"
-          />
-          {!product.hasProductImage ? (
-            <p className="border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground">
-              Category illustration — a product photograph is not available yet.
-            </p>
-          ) : null}
-        </div>
-
-        <div>
+        <div className="lg:order-2">
           {product.categoryName ? (
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {product.categoryName}
@@ -153,8 +140,6 @@ function ProductDetail() {
             </Badge>
             {product.sku ? <Badge variant="secondary">{product.sku}</Badge> : null}
           </div>
-
-          <p className="mt-5 text-sm text-muted-foreground">{product.description}</p>
 
           <div className="mt-6 flex items-baseline gap-2">
             <span className="text-3xl font-semibold tabular-nums tracking-tight text-primary">{formatGHS(product.price)}</span>
@@ -214,18 +199,20 @@ function ProductDetail() {
           {status === "low-stock" && canPurchase ? (
             <p className="mt-2 text-xs text-muted-foreground">Limited availability. Stock is confirmed when you place the order.</p>
           ) : null}
+          <p className="mt-5 text-sm text-muted-foreground">{product.description}</p>
+        </div>
 
-          <div className="mt-6 rounded-md border border-border bg-primary-soft p-4 text-xs text-muted-foreground">
-            <p className="flex items-center gap-2 font-semibold text-foreground">
-              <FlaskConical className="h-4 w-4 text-primary" /> Save to an experiment
+        <div className="overflow-hidden rounded-lg border border-border bg-secondary lg:order-1">
+          <img
+            src={product.image}
+            alt={product.hasProductImage ? product.name : `Category illustration for ${product.name}`}
+            className="aspect-4/3 w-full object-cover"
+          />
+          {!product.hasProductImage ? (
+            <p className="border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground">
+              Category illustration — a product photograph is not available yet.
             </p>
-            <p className="mt-1">
-              Signed-in users can group items into reusable experiment lists for quick reordering.{" "}
-              <Link to="/experiments" className="font-semibold text-primary hover:underline">
-                Manage experiments
-              </Link>
-            </p>
-          </div>
+          ) : null}
         </div>
       </div>
 

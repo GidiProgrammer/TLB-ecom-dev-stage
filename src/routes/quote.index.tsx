@@ -55,12 +55,16 @@ function QuoteLine({
   }
 
   if (error || !p) {
+    const label = line.id.replace(/-/g, " ");
     return (
-      <div className="flex items-center justify-between gap-4 p-4">
-        <p className="mt-2 text-sm text-muted-foreground">
-          This product could not be loaded. Remove it from the list to continue.
-        </p>
-        <Button variant="ghost" size="sm" onClick={() => removeFromQuote(line.id)}>
+      <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-medium capitalize">{label}</p>
+          <p className="text-sm text-destructive" role="status">
+            This product is no longer available. Remove it before submitting the quote request.
+          </p>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={() => removeFromQuote(line.id)}>
           Remove
         </Button>
       </div>
@@ -125,7 +129,10 @@ function QuotePage() {
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const linesLoading = lineQueries.some((q) => q.isLoading);
-  const linesMissing = quote.some((_, i) => !lineQueries[i]?.data);
+  const linesMissing = quote.some((_, i) => {
+    const query = lineQueries[i];
+    return !query || (!query.isLoading && !query.data);
+  });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,6 +254,11 @@ function QuotePage() {
               <p className="mt-1 text-destructive/80">Your list and form details have been kept. You can correct the issue and try again.</p>
             </div>
           ) : null}
+          {linesMissing ? (
+            <div role="status" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              A product in your quote list is no longer available. Remove it before submitting the quote request.
+            </div>
+          ) : null}
           <h2 className="font-display text-base font-bold">Your details</h2>
           <div>
             <Label htmlFor="q-name">Contact name</Label>
@@ -275,7 +287,11 @@ function QuotePage() {
               className="mt-1.5"
             />
           </div>
-          <Button type="submit" disabled={busy || linesLoading || linesMissing} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button
+            type="submit"
+            disabled={!user || quote.length === 0 || busy || linesLoading || linesMissing}
+            className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+          >
             {busy ? "Submitting…" : "Submit quote request"}
           </Button>
           {!user && (

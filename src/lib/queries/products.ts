@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { productImage } from "@/lib/catalog-utils";
+import { productSearchOrFilter } from "@/lib/product-search";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type CatalogCategory = {
@@ -82,10 +83,6 @@ function mapProduct(row: ProductWithCategory): CatalogProduct {
 
 const PRODUCT_SELECT = "*, categories(*)" as const;
 
-function escapeIlike(value: string) {
-  return value.replace(/[%_,]/g, " ").trim();
-}
-
 async function fetchCategories(): Promise<CatalogCategory[]> {
   const { data, error } = await supabase.from("categories").select("*").order("name");
   const err = loadError("Could not load categories", error);
@@ -123,9 +120,9 @@ async function fetchProducts(opts: {
     query = query.eq("categories.slug", opts.categorySlug!);
   }
 
-  const q = escapeIlike(opts.search ?? "");
-  if (q) {
-    query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,sku.ilike.%${q}%,slug.ilike.%${q}%`);
+  const searchFilter = productSearchOrFilter(opts.search ?? "");
+  if (searchFilter) {
+    query = query.or(searchFilter);
   }
 
   if (opts.inStock) {
