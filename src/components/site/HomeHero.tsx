@@ -86,6 +86,7 @@ export function HomeHero() {
         <div
           ref={rootRef}
           className="relative isolate overflow-hidden rounded-lg bg-primary text-white"
+          data-autoplay={paused ? "paused" : "running"}
           onMouseEnter={() => {
             hovering.current = true;
             syncPause();

@@ -126,8 +126,8 @@ function ProductDetail() {
         <span className="text-foreground">{product.name}</span>
       </nav>
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-2">
-        <div className="lg:order-2">
+      <div className="mt-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
+        <div className="lg:col-start-2 lg:row-start-1">
           {product.categoryName ? (
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {product.categoryName}
@@ -199,10 +199,9 @@ function ProductDetail() {
           {status === "low-stock" && canPurchase ? (
             <p className="mt-2 text-xs text-muted-foreground">Limited availability. Stock is confirmed when you place the order.</p>
           ) : null}
-          <p className="mt-5 text-sm text-muted-foreground">{product.description}</p>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-border bg-secondary lg:order-1">
+        <div className="mt-10 overflow-hidden rounded-lg border border-border bg-secondary lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0">
           <img
             src={product.image}
             alt={product.hasProductImage ? product.name : `Category illustration for ${product.name}`}
@@ -214,6 +213,8 @@ function ProductDetail() {
             </p>
           ) : null}
         </div>
+
+        <p className="mt-5 text-sm text-muted-foreground lg:col-start-2 lg:row-start-2 lg:mt-0">{product.description}</p>
       </div>
 
       <Tabs defaultValue="specs" className="mt-12">

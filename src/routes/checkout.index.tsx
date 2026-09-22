@@ -272,7 +272,7 @@ function Checkout() {
           </div>
           <Button
             type="submit"
-            disabled={busy || linesLoading || linesMissing || linesUnavailable}
+            disabled={!user || busy || linesLoading || linesMissing || linesUnavailable}
             className="mt-5 w-full bg-accent text-accent-foreground hover:bg-accent/90"
           >
             {busy ? "Submitting…" : "Place order"}

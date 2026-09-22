@@ -19,6 +19,16 @@ test.describe("shop catalogue", () => {
     await expect(page.getByRole("link", { name: /Methanol/i }).first()).toBeVisible({ timeout: 15_000 });
   });
 
+  test("wildcard-only searches do not list the catalogue", async ({ page }) => {
+    for (const q of ["%", "_", "%_"]) {
+      await page.goto(`/shop?q=${encodeURIComponent(q)}`);
+      await expect(page.getByRole("heading", { name: /Results for/ })).toBeVisible();
+      await expect(page.getByText("No products matched")).toBeVisible();
+      await expect(page.getByText("0 products")).toBeVisible();
+      await expect(page.getByRole("article")).toHaveCount(0);
+    }
+  });
+
   test("search finds a product name that contains parentheses", async ({ page }) => {
     await page.goto("/shop?q=Buffer%20Solution%20pH%207.00%20(colour%20coded)");
     await expect(page.getByRole("link", { name: "Buffer Solution pH 7.00 (colour coded)", exact: true })).toBeVisible({
@@ -41,6 +51,26 @@ test.describe("shop catalogue", () => {
     await page.getByLabel("Sort products").click();
     await page.getByRole("option", { name: "Price: low to high" }).click({ force: true, timeout: 10_000 });
     await expect(page).toHaveURL(/sort=price-asc/);
+  });
+
+  test("product purchase actions stay in view on phone and tablet", async ({ page }) => {
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 768, height: 1024 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/product/ac-002");
+      const add = page.getByRole("button", { name: "Add to cart" });
+      await expect(add).toBeVisible({ timeout: 15_000 });
+      const box = await add.boundingBox();
+      expect(box).toBeTruthy();
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow).toBeLessThanOrEqual(1);
+    }
   });
 
   test("product detail loads", async ({ page }) => {
@@ -152,6 +182,21 @@ test.describe("cart honesty", () => {
     await expect(page.getByRole("button", { name: "Submit quote request" })).toBeDisabled();
     await page.getByRole("button", { name: "Remove" }).click();
     await expect(page.getByText("Your quote list is empty")).toBeVisible();
+  });
+
+  test("guest checkout place order stays disabled", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "tlb-store-v1",
+        JSON.stringify({ cart: [{ id: "ac-002", qty: 1 }], quote: [] }),
+      );
+    });
+    await page.goto("/checkout");
+    await expect(page.getByRole("link", { name: /Methanol/i }).or(page.getByText(/Methanol/i)).first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("button", { name: "Place order" })).toBeDisabled();
+    await expect(page.getByRole("main").getByRole("link", { name: "Sign in" }).first()).toBeVisible();
   });
 
   test("guest quote submit stays disabled", async ({ page }) => {

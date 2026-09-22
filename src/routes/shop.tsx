@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { formatGHS } from "@/lib/catalog-utils";
+import { isWildcardOnlySearch } from "@/lib/product-search";
 import { normalizeShopSort } from "@/lib/shop-search";
 import { useCategories, useProducts } from "@/lib/queries/products";
 import { ProductCard } from "@/components/site/ProductCard";
@@ -52,6 +53,7 @@ function Shop() {
   const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCategories();
   const category = activeCategory === "all" ? undefined : categories?.find((c) => c.slug === activeCategory);
   const categoriesReady = !categoriesLoading && !categoriesError;
+  const unmatchedSearch = Boolean(search.q && isWildcardOnlySearch(search.q));
   const invalidCategory = Boolean(
     search.category &&
       search.category !== "all" &&
@@ -69,9 +71,9 @@ function Shop() {
     categorySlug: invalidCategory || activeCategory === "all" ? undefined : activeCategory,
     sort: search.sort,
     inStock: Boolean(search.inStock),
-    enabled: !invalidCategory,
+    enabled: !invalidCategory && !unmatchedSearch,
   });
-  const results = products ?? [];
+  const results = unmatchedSearch ? [] : (products ?? []);
 
   const setSearch = (next: Partial<ShopSearch>) =>
     navigate({ to: "/shop", search: { ...search, ...next } });
@@ -188,11 +190,13 @@ function Shop() {
             <section>
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                 <p className="text-sm text-muted-foreground" aria-live="polite">
-                  {productsLoading
-                    ? "Loading products…"
-                    : productsError
-                      ? "Unable to load product count"
-                      : `${results.length} product${results.length === 1 ? "" : "s"}`}
+                  {unmatchedSearch
+                    ? "0 products"
+                    : productsLoading
+                      ? "Loading products…"
+                      : productsError
+                        ? "Unable to load product count"
+                        : `${results.length} product${results.length === 1 ? "" : "s"}`}
                   {!productsLoading && !productsError && results.length > 0 && (
                     <> · from {formatGHS(Math.min(...results.map((r) => r.price)))}</>
                   )}
@@ -212,13 +216,13 @@ function Shop() {
                 </Select>
               </div>
 
-              {productsLoading ? (
+              {productsLoading && !unmatchedSearch ? (
                 <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <Skeleton key={i} className="aspect-4/3 w-full rounded-md" />
                   ))}
                 </div>
-              ) : productsError ? (
+              ) : productsError && !unmatchedSearch ? (
                 <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
                   <p className="font-display text-lg font-bold">Could not load products</p>
                   <p className="mt-2 text-sm text-muted-foreground">Please try again.</p>
@@ -230,9 +234,11 @@ function Shop() {
                 <div className="mt-10 rounded-md border border-dashed border-border p-10 text-center">
                   <p className="font-display text-lg font-bold">No products matched</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {search.inStock
-                      ? "No in-stock products matched these filters. Clear the in-stock filter or try another category."
-                      : "Try a different search term, or request a quote and we will source it for you."}
+                    {unmatchedSearch
+                      ? "That search has no catalogue matches. Try a product name, SKU, or category."
+                      : search.inStock
+                        ? "No in-stock products matched these filters. Clear the in-stock filter or try another category."
+                        : "Try a different search term, or request a quote and we will source it for you."}
                   </p>
                   <Button asChild className="mt-4" variant="outline">
                     <Link to="/contact">Ask our team</Link>

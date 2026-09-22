@@ -1,6 +1,6 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { productSearchOrFilter } from "./product-search.ts";
+import { isWildcardOnlySearch, productSearchOrFilter } from "./product-search.ts";
 
 describe("productSearchOrFilter", () => {
   test("keeps parentheses inside a quoted pattern", () => {
@@ -31,5 +31,15 @@ describe("productSearchOrFilter", () => {
   test("blank search does not build a filter", () => {
     assert.equal(productSearchOrFilter("   "), null);
     assert.equal(productSearchOrFilter(""), null);
+    assert.equal(isWildcardOnlySearch(""), false);
+    assert.equal(isWildcardOnlySearch("   "), false);
+  });
+
+  test("percent and underscore searches are not an unfiltered catalogue", () => {
+    for (const value of ["%", "_", "%_", " % _ "]) {
+      assert.equal(isWildcardOnlySearch(value), true);
+      assert.equal(productSearchOrFilter(value), null);
+    }
+    assert.equal(isWildcardOnlySearch("methanol"), false);
   });
 });
