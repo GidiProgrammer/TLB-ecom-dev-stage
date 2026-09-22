@@ -29,7 +29,7 @@ test.describe("commerce submit idempotency", () => {
     await submit.click();
     await submit.click({ force: true, timeout: 1_000 }).catch(() => undefined);
 
-    const confirmed = page.locator("h1").filter({ hasText: "Order confirmed" });
+    const confirmed = page.locator("h1").filter({ hasText: "Order received" });
     const failed = page.getByRole("alert").filter({ hasText: "Your order was not placed" });
     await Promise.race([
       confirmed.waitFor({ state: "attached", timeout: 90_000 }),
@@ -45,7 +45,7 @@ test.describe("commerce submit idempotency", () => {
       const confirmationUrl = page.url();
       await page.reload();
       await expect(page).toHaveURL(confirmationUrl);
-      await expect(page.getByRole("heading", { name: "Order confirmed" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Order received" })).toBeVisible();
       await expect(page.getByText(/Keep this reference/i)).toBeVisible();
       await page.goto("/cart");
       await expect(page.getByText("Your cart is empty")).toBeVisible();

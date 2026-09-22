@@ -148,6 +148,9 @@ function AuthPage() {
       </div>
 
       <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
+        <h1 className="mb-6 font-display text-2xl font-extrabold leading-tight lg:hidden">
+          Accounts built for laboratories
+        </h1>
         {mode === "forgot" ? (
           <div>
             <h2 className="font-display text-xl font-extrabold">Reset your password</h2>
@@ -162,6 +165,7 @@ function AuthPage() {
                   <Input
                     id="reset-email"
                     type="email"
+                    autoComplete="email"
                     required
                     value={recoveryEmail}
                     onChange={(e) => setRecoveryEmail(e.target.value)}
@@ -192,6 +196,7 @@ function AuthPage() {
               <Input
                 id="new-pass"
                 type="password"
+                autoComplete="new-password"
                 required
                 minLength={6}
                 value={newPassword}
@@ -217,6 +222,7 @@ function AuthPage() {
                   <Input
                     id="si-email"
                     type="email"
+                    autoComplete="email"
                     required
                     value={signIn.email}
                     onChange={(e) => setSignIn((s) => ({ ...s, email: e.target.value }))}
@@ -228,6 +234,7 @@ function AuthPage() {
                   <Input
                     id="si-pass"
                     type="password"
+                    autoComplete="current-password"
                     required
                     value={signIn.password}
                     onChange={(e) => setSignIn((s) => ({ ...s, password: e.target.value }))}
@@ -277,6 +284,7 @@ function AuthPage() {
                     <Label htmlFor="su-name">Full name</Label>
                     <Input
                       id="su-name"
+                      autoComplete="name"
                       required
                       value={signUp.fullName}
                       onChange={(e) => setSignUp((s) => ({ ...s, fullName: e.target.value }))}
@@ -287,6 +295,8 @@ function AuthPage() {
                     <Label htmlFor="su-phone">Phone</Label>
                     <Input
                       id="su-phone"
+                      type="tel"
+                      autoComplete="tel"
                       value={signUp.phone}
                       onChange={(e) => setSignUp((s) => ({ ...s, phone: e.target.value }))}
                       className="mt-1.5"
@@ -300,6 +310,7 @@ function AuthPage() {
                       <Label htmlFor="su-inst">Institution name</Label>
                       <Input
                         id="su-inst"
+                        autoComplete="organization"
                         required
                         value={signUp.institutionName}
                         onChange={(e) => setSignUp((s) => ({ ...s, institutionName: e.target.value }))}
@@ -325,6 +336,7 @@ function AuthPage() {
                     <Input
                       id="su-email"
                       type="email"
+                      autoComplete="email"
                       required
                       value={signUp.email}
                       onChange={(e) => setSignUp((s) => ({ ...s, email: e.target.value }))}
@@ -336,6 +348,7 @@ function AuthPage() {
                     <Input
                       id="su-pass"
                       type="password"
+                      autoComplete="new-password"
                       required
                       minLength={6}
                       value={signUp.password}

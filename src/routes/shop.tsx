@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { formatGHS } from "@/lib/catalog-utils";
+import { normalizeShopSort } from "@/lib/shop-search";
 import { useCategories, useProducts } from "@/lib/queries/products";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/shop")({
   validateSearch: (search: Record<string, unknown>): ShopSearch => ({
     q: typeof search["q"] === "string" && search["q"] ? search["q"] : undefined,
     category: typeof search["category"] === "string" ? search["category"] : undefined,
-    sort: typeof search["sort"] === "string" ? search["sort"] : undefined,
+    sort: normalizeShopSort(search["sort"]),
     inStock: search["inStock"] === true || search["inStock"] === "true" ? true : undefined,
   }),
   head: () => ({
@@ -127,7 +128,11 @@ function Shop() {
                     <button
                       type="button"
                       onClick={() => setSearch({ category: undefined })}
-                      className={activeCategory === "all" ? "font-semibold text-primary" : "text-muted-foreground hover:text-primary"}
+                      className={
+                        activeCategory === "all"
+                          ? "flex min-h-11 w-full items-center text-left font-semibold text-primary"
+                          : "flex min-h-11 w-full items-center text-left text-muted-foreground hover:text-primary"
+                      }
                     >
                       All categories
                     </button>
@@ -141,7 +146,11 @@ function Shop() {
                       <button
                         type="button"
                         onClick={() => setSearch({ category: c.slug })}
-                        className={activeCategory === c.slug ? "text-left font-semibold text-primary" : "text-left text-muted-foreground hover:text-primary"}
+                        className={
+                          activeCategory === c.slug
+                            ? "flex min-h-11 w-full items-center text-left font-semibold text-primary"
+                            : "flex min-h-11 w-full items-center text-left text-muted-foreground hover:text-primary"
+                        }
                       >
                         {c.name}
                       </button>
@@ -178,11 +187,13 @@ function Shop() {
 
             <section>
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-                <p className="text-sm text-muted-foreground">
-                  {productsError
-                    ? "Unable to load product count"
-                    : `${results.length} product${results.length === 1 ? "" : "s"}`}
-                  {!productsError && results.length > 0 && (
+                <p className="text-sm text-muted-foreground" aria-live="polite">
+                  {productsLoading
+                    ? "Loading products…"
+                    : productsError
+                      ? "Unable to load product count"
+                      : `${results.length} product${results.length === 1 ? "" : "s"}`}
+                  {!productsLoading && !productsError && results.length > 0 && (
                     <> · from {formatGHS(Math.min(...results.map((r) => r.price)))}</>
                   )}
                 </p>

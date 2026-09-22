@@ -9,3 +9,17 @@ test("homepage loads", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "New in catalogue" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Best sellers" })).toHaveCount(0);
 });
+
+test("homepage does not overflow at 390, 768, or 1440", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "Glassware" })).toBeVisible({
+    timeout: 15_000,
+  });
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `horizontal overflow at ${width}`).toBeLessThanOrEqual(1);
+  }
+});

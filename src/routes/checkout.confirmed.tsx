@@ -23,7 +23,7 @@ export const Route = createFileRoute("/checkout/confirmed")({
   },
   head: () =>
     privatePageHead(
-      "Order confirmed — TLB Enterprise",
+      "Order received — TLB Enterprise",
       "Your laboratory supply order was submitted. Keep your order reference for follow-up.",
     ),
   component: CheckoutConfirmed,
@@ -65,7 +65,7 @@ function CheckoutConfirmed() {
 
   return (
     <ConfirmationFound
-      heading="Order confirmed"
+      heading="Order received"
       accountLabel="View your orders"
       accountSearch={accountHistorySearch("order", query.data.reference)}
     >

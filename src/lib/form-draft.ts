@@ -1,5 +1,14 @@
 const PREFIX = "tlb-form-draft:";
 
+export function hasFormDraft(key: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(PREFIX + key) != null;
+  } catch {
+    return false;
+  }
+}
+
 export function readFormDraft<T extends Record<string, string>>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {

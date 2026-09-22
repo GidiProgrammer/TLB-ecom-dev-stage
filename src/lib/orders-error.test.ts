@@ -35,10 +35,22 @@ describe("mapOrderError", () => {
   test("checkout confirmation does not invite a second submit", () => {
     const checkout = readFileSync(resolve(here, "../routes/checkout.index.tsx"), "utf8");
     const confirmed = readFileSync(resolve(here, "../routes/checkout.confirmed.tsx"), "utf8");
+    const quoteConfirmed = readFileSync(resolve(here, "../routes/quote.confirmed.tsx"), "utf8");
+    assert.match(confirmed, /Order received/);
+    assert.doesNotMatch(confirmed, /Order confirmed/);
     assert.match(confirmed, /submitted successfully/);
+    assert.match(quoteConfirmed, /Your quote request was received/);
+    assert.match(quoteConfirmed, /later in your account/);
     assert.doesNotMatch(checkout, /safely submit again/);
     assert.doesNotMatch(confirmed, /safely submit again/);
+    assert.doesNotMatch(quoteConfirmed, /safely submit again/);
     assert.doesNotMatch(checkout, /needs to be retried/);
     assert.doesNotMatch(confirmed, /needs to be retried/);
+    assert.doesNotMatch(quoteConfirmed, /needs to be retried/);
+    assert.match(checkout, /product_id: p\.productId, quantity: l\.qty/);
+    const quoteForm = readFileSync(resolve(here, "../routes/quote.index.tsx"), "utf8");
+    assert.match(quoteForm, /product_id: p\.productId, quantity: l\.qty/);
+    assert.doesNotMatch(quoteForm, /quoted_price/);
+    assert.doesNotMatch(checkout, /quoted_price/);
   });
 });

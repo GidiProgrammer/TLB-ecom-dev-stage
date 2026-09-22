@@ -71,9 +71,8 @@ function QuoteConfirmed() {
       accountSearch={accountHistorySearch("quote", query.data.reference)}
     >
       <p className="border-b border-border px-4 py-3 text-sm text-muted-foreground">
-        Your request has been received. Keep this reference: {query.data.reference}. TLB will review
-        the list and provide pricing. If your submission needs to be retried, you can safely submit
-        again.
+        Your quote request was received. Keep this reference: {query.data.reference}. You can find it
+        later in your account under quote requests. TLB will review the list and provide pricing.
       </p>
       <AccountQuoteCard quote={query.data} forceOpen />
     </ConfirmationFound>

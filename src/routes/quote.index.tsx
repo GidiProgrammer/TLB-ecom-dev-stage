@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueries } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/catalog-utils";
@@ -10,7 +10,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { commerceConfirmationPath, parseQuoteReference } from "@/lib/commerce-confirmation";
 import { createQuote } from "@/lib/quotes";
 import { clearSubmissionNonce, getOrCreateSubmissionNonce } from "@/lib/commerce-nonce";
-import { clearFormDraft, readFormDraft, writeFormDraft } from "@/lib/form-draft";
+import { clearFormDraft } from "@/lib/form-draft";
+import { usePreservedContactForm } from "@/lib/use-contact-draft";
+import { useAccountProfile } from "@/lib/queries/account";
+import { LineQuantityInput } from "@/components/site/LineQuantityInput";
 import { privatePageHead } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,13 +78,10 @@ function QuoteLine({
           {p.unit ? ` / ${p.unit}` : ""}
         </p>
       </div>
-      <Input
-        type="number"
-        min={1}
-        aria-label={`Quantity for ${p.name}`}
+      <LineQuantityInput
+        label={`Quantity for ${p.name}`}
         value={line.qty}
-        onChange={(e) => setQuoteQty(line.id, Number(e.target.value) || 0)}
-        className="w-20"
+        onCommit={(quantity) => setQuoteQty(line.id, quantity)}
       />
       <Button variant="ghost" size="icon" aria-label="Remove" onClick={() => removeFromQuote(line.id)}>
         <Trash2 className="h-4 w-4" />
@@ -92,7 +92,8 @@ function QuoteLine({
 
 function QuotePage() {
   const { quote, setQuoteQty, removeFromQuote, clearQuote } = useStore();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const profile = useAccountProfile(user?.id);
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -103,19 +104,22 @@ function QuotePage() {
       enabled: Boolean(line.id),
     })),
   });
-  const [form, setForm] = useState(() =>
-    readFormDraft(QUOTE_DRAFT, {
+  const [form, setForm] = usePreservedContactForm(
+    QUOTE_DRAFT,
+    {
       name: "",
-      email: user?.email ?? "",
+      email: "",
       phone: "",
       institution: "",
       notes: "",
-    }),
+    },
+    {
+      authLoading,
+      profile: profile.data,
+      profileLoading: Boolean(user?.id) && profile.isLoading,
+      email: user?.email,
+    },
   );
-
-  useEffect(() => {
-    writeFormDraft(QUOTE_DRAFT, form);
-  }, [form]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -246,19 +250,19 @@ function QuotePage() {
           <h2 className="font-display text-base font-bold">Your details</h2>
           <div>
             <Label htmlFor="q-name">Contact name</Label>
-            <Input id="q-name" required value={form.name} onChange={set("name")} className="mt-1.5" />
+            <Input id="q-name" autoComplete="name" required value={form.name} onChange={set("name")} className="mt-1.5" />
           </div>
           <div>
             <Label htmlFor="q-email">Email</Label>
-            <Input id="q-email" type="email" required value={form.email} onChange={set("email")} className="mt-1.5" />
+            <Input id="q-email" type="email" autoComplete="email" required value={form.email} onChange={set("email")} className="mt-1.5" />
           </div>
           <div>
             <Label htmlFor="q-phone">Phone</Label>
-            <Input id="q-phone" required value={form.phone} onChange={set("phone")} className="mt-1.5" />
+            <Input id="q-phone" type="tel" autoComplete="tel" required value={form.phone} onChange={set("phone")} className="mt-1.5" />
           </div>
           <div>
             <Label htmlFor="q-inst">Institution / company</Label>
-            <Input id="q-inst" value={form.institution} onChange={set("institution")} className="mt-1.5" />
+            <Input id="q-inst" autoComplete="organization" value={form.institution} onChange={set("institution")} className="mt-1.5" />
           </div>
           <div>
             <Label htmlFor="q-notes">Notes</Label>

@@ -23,6 +23,13 @@ export function safeInternalPath(value: unknown, fallback = "/account"): string 
   }
 }
 
+/** Same-origin path to restore after sign-in, including search and hash. */
+export function customerReturnPath(pathname: string, search = "", hash = ""): string {
+  const suffix = search ? (search.startsWith("?") ? search : `?${search}`) : "";
+  const hashPart = hash ? (hash.startsWith("#") ? hash : `#${hash}`) : "";
+  return safeInternalPath(`${pathname}${suffix}${hashPart}`);
+}
+
 export function parseRedirectSearch(search: Record<string, unknown>): string | undefined {
   const raw = search["redirect"];
   if (typeof raw !== "string" || !raw) return undefined;

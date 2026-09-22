@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueries } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { formatGHS } from "@/lib/catalog-utils";
 import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
@@ -9,7 +9,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { commerceConfirmationPath, parseOrderReference } from "@/lib/commerce-confirmation";
 import { createOrder } from "@/lib/orders";
 import { clearSubmissionNonce, getOrCreateSubmissionNonce } from "@/lib/commerce-nonce";
-import { clearFormDraft, readFormDraft, writeFormDraft } from "@/lib/form-draft";
+import { clearFormDraft } from "@/lib/form-draft";
+import { usePreservedContactForm } from "@/lib/use-contact-draft";
+import { useAccountProfile } from "@/lib/queries/account";
 import { privatePageHead } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +29,8 @@ export const Route = createFileRoute("/checkout/")({
 
 const CHECKOUT_DRAFT = "checkout";
 
-function CheckoutLine({ line }: { line: LineItem }) {
-  const { data: product, isLoading } = useProduct(line.id);
+function CheckoutLine({ line, onRemove }: { line: LineItem; onRemove: (id: string) => void }) {
+  const { data: product, isLoading, error } = useProduct(line.id);
   if (isLoading) {
     return (
       <li className="flex justify-between gap-3 text-muted-foreground">
@@ -36,7 +38,22 @@ function CheckoutLine({ line }: { line: LineItem }) {
       </li>
     );
   }
-  if (!product) return null;
+  if (error || !product) {
+    const label = line.id.replace(/-/g, " ");
+    return (
+      <li className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-medium capitalize">{label}</p>
+          <p className="text-sm text-destructive" role="status">
+            This product is no longer available. Remove it before placing the order.
+          </p>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={() => onRemove(line.id)}>
+          Remove
+        </Button>
+      </li>
+    );
+  }
   return (
     <li className="flex justify-between gap-3">
       <span className="text-muted-foreground">
@@ -48,8 +65,9 @@ function CheckoutLine({ line }: { line: LineItem }) {
 }
 
 function Checkout() {
-  const { cart, clearCart } = useStore();
-  const { user } = useAuth();
+  const { cart, clearCart, removeFromCart } = useStore();
+  const { user, loading: authLoading } = useAuth();
+  const profile = useAccountProfile(user?.id);
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -60,21 +78,24 @@ function Checkout() {
       enabled: Boolean(line.id),
     })),
   });
-  const [form, setForm] = useState(() =>
-    readFormDraft(CHECKOUT_DRAFT, {
+  const [form, setForm] = usePreservedContactForm(
+    CHECKOUT_DRAFT,
+    {
       name: "",
-      email: user?.email ?? "",
+      email: "",
       phone: "",
       institution: "",
       address: "",
       city: "",
       notes: "",
-    }),
+    },
+    {
+      authLoading,
+      profile: profile.data,
+      profileLoading: Boolean(user?.id) && profile.isLoading,
+      email: user?.email,
+    },
   );
-
-  useEffect(() => {
-    writeFormDraft(CHECKOUT_DRAFT, form);
-  }, [form]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -87,7 +108,10 @@ function Checkout() {
     .filter(Boolean);
   const cartSubtotal = items.reduce((sum, i) => sum + (i ? i.price * i.qty : 0), 0);
   const linesLoading = lineQueries.some((q) => q.isLoading);
-  const linesMissing = cart.some((_, i) => !lineQueries[i]?.data);
+  const linesMissing = cart.some((_, i) => {
+    const query = lineQueries[i];
+    return !query || (!query.isLoading && !query.data);
+  });
   const linesUnavailable = cart.some((line, i) => {
     const p = lineQueries[i]?.data;
     if (!p) return false;
@@ -192,6 +216,11 @@ function Checkout() {
               <p className="mt-1 text-destructive/80">Your cart and form details have been kept. You can correct the issue and try again.</p>
             </div>
           )}
+          {linesMissing ? (
+            <div role="status" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              A product in your order is no longer available. Remove it before placing the order.
+            </div>
+          ) : null}
           {linesUnavailable ? (
             <div role="status" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               One or more items are out of stock or exceed current stock. Return to your cart to update quantities.
@@ -201,27 +230,27 @@ function Checkout() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="name">Contact name</Label>
-              <Input id="name" required value={form.name} onChange={set("name")} className="mt-1.5" />
+              <Input id="name" autoComplete="name" required value={form.name} onChange={set("name")} className="mt-1.5" />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required value={form.email} onChange={set("email")} className="mt-1.5" />
+              <Input id="email" type="email" autoComplete="email" required value={form.email} onChange={set("email")} className="mt-1.5" />
             </div>
             <div>
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" required value={form.phone} onChange={set("phone")} className="mt-1.5" />
+              <Input id="phone" type="tel" autoComplete="tel" required value={form.phone} onChange={set("phone")} className="mt-1.5" />
             </div>
             <div>
               <Label htmlFor="institution">Institution / company</Label>
-              <Input id="institution" value={form.institution} onChange={set("institution")} className="mt-1.5" />
+              <Input id="institution" autoComplete="organization" value={form.institution} onChange={set("institution")} className="mt-1.5" />
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="address">Delivery address</Label>
-              <Input id="address" required value={form.address} onChange={set("address")} className="mt-1.5" />
+              <Input id="address" autoComplete="street-address" required value={form.address} onChange={set("address")} className="mt-1.5" />
             </div>
             <div>
               <Label htmlFor="city">City / town</Label>
-              <Input id="city" required value={form.city} onChange={set("city")} className="mt-1.5" />
+              <Input id="city" autoComplete="address-level2" required value={form.city} onChange={set("city")} className="mt-1.5" />
             </div>
           </div>
           <div>
@@ -234,7 +263,7 @@ function Checkout() {
           <h2 className="font-display text-base font-bold">Your order</h2>
           <ul className="mt-4 space-y-2 text-sm">
             {cart.map((line) => (
-              <CheckoutLine key={line.id} line={line} />
+              <CheckoutLine key={line.id} line={line} onRemove={removeFromCart} />
             ))}
           </ul>
           <div className="mt-4 flex justify-between border-t border-border pt-3 text-base font-semibold">

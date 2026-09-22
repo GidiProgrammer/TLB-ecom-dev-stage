@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQueries } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { LineQuantityInput } from "@/components/site/LineQuantityInput";
 import { formatGHS, remainingPurchasableQty, stockLabel, stockStatus } from "@/lib/catalog-utils";
 import { fetchProductBySlug, useProduct } from "@/lib/queries/products";
 import { useStore, type LineItem } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { privatePageHead } from "@/lib/seo";
 
@@ -101,28 +100,11 @@ function CartLine({
               <Link to="/shop">Return to shop</Link>
             </Button>
           ) : (
-            <Input
-              type="number"
-              min={1}
-              max={product.stock_quantity}
-              step={1}
-              aria-label={`Quantity for ${product.name}`}
+            <LineQuantityInput
+              label={`Quantity for ${product.name}`}
               value={line.qty}
-              onChange={(e) => {
-                const next = Math.floor(Number(e.target.value));
-                if (!Number.isFinite(next) || next <= 0) {
-                  setCartQty(line.id, 0);
-                  return;
-                }
-                if (next > product.stock_quantity) {
-                  toast.error("That quantity is more than current stock", {
-                    description: `Reduce to ${product.stock_quantity} or fewer.`,
-                  });
-                  return;
-                }
-                setCartQty(line.id, next);
-              }}
-              className="w-20"
+              max={product.stock_quantity}
+              onCommit={(quantity) => setCartQty(line.id, quantity)}
             />
           )}
           {overStock ? (

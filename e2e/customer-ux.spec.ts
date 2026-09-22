@@ -44,6 +44,32 @@ test.describe("CP33 customer UX", () => {
     await expect(page.getByRole("article").first()).toBeVisible();
   });
 
+  test("checkout keeps an existing contact draft", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "tlb-store-v1",
+        JSON.stringify({ cart: [{ id: "ac-002", qty: 1 }], quote: [] }),
+      );
+      window.sessionStorage.setItem(
+        "tlb-form-draft:checkout",
+        JSON.stringify({
+          name: "Draft Person",
+          email: "draft@example.test",
+          phone: "0244000000",
+          institution: "Lab",
+          address: "1 Draft Road",
+          city: "Accra",
+          notes: "keep me",
+        }),
+      );
+    });
+    await page.goto("/checkout");
+    await expect(page.getByLabel("Contact name")).toHaveValue("Draft Person", { timeout: 15_000 });
+    await expect(page.getByLabel("Email")).toHaveValue("draft@example.test");
+    await expect(page.getByLabel("Phone")).toHaveValue("0244000000");
+    await expect(page.getByLabel("Delivery address")).toHaveValue("1 Draft Road");
+  });
+
   test("guest checkout and quote send a safe return path", async ({ page }) => {
     await seedCart(page);
     await page.goto("/checkout");
@@ -133,5 +159,11 @@ test.describe("CP33 mobile navigation", () => {
     await expect(page.getByRole("dialog").getByRole("heading", { name: "Menu" })).toBeVisible();
     await expect(page.getByRole("dialog").getByRole("link", { name: "Glassware" })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("dialog").getByRole("link", { name: "My experiments" })).toHaveCount(0);
+  });
+
+  test("auth has one visible page heading", async ({ page }) => {
+    await page.goto("/auth");
+    await expect(page.getByRole("heading", { level: 1, name: "Accounts built for laboratories" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   });
 });

@@ -145,7 +145,8 @@ test.describe("authenticated account", () => {
       await expect(page.getByText("That reference wasn't found in your account history.")).toHaveCount(0);
 
       await page.goto(`/checkout/confirmed?ref=${encodeURIComponent(orderRef)}`);
-      await expect(page.getByRole("heading", { name: "Order confirmed" })).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByRole("heading", { name: "Order received" })).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByRole("heading", { name: "Order confirmed" })).toHaveCount(0);
       await expect(page.getByRole("heading", { name: orderRef })).toBeVisible();
       await expect(page.getByText(/Order total|line item/i).first()).toBeVisible();
       await expect(page.getByRole("link", { name: "View your orders" })).toHaveAttribute(
@@ -171,6 +172,8 @@ test.describe("authenticated account", () => {
       await expect(page.getByRole("heading", { name: "Quote request received" })).toBeVisible({
         timeout: 15_000,
       });
+      await expect(page.getByText(/safely submit again/i)).toHaveCount(0);
+      await expect(page.getByText(/find it later in your account/i)).toBeVisible();
       await expect(page.getByRole("heading", { name: quoteRef })).toBeVisible();
       await expect(page.getByRole("link", { name: "View your quote requests" })).toHaveAttribute(
         "href",
@@ -197,9 +200,59 @@ test.describe("authenticated account", () => {
         return main.scrollWidth > main.clientWidth + 1;
       });
       expect(overflow, `horizontal overflow in account main at ${width}`).toBe(false);
+      const pageOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(pageOverflow, `horizontal page overflow at ${width}`).toBeLessThanOrEqual(1);
       const tabBox = await page.getByRole("tab", { name: "Orders" }).boundingBox();
       expect(tabBox?.height ?? 0).toBeGreaterThanOrEqual(40);
     }
+  });
+
+  test("signed-out quote deep link returns after sign-in", async ({ browser }) => {
+    const creds = e2eCredentials();
+    if (!creds) {
+      throw new Error("E2E_USER_EMAIL and E2E_USER_PASSWORD must be set in the local environment");
+    }
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const page = await context.newPage();
+    const target = "/account?tab=quotes&ref=QT-20260922-ABCDEF";
+    await page.goto(target);
+    await expect(page).toHaveURL(/\/auth\?redirect=/, { timeout: 15_000 });
+    expect(new URL(page.url()).searchParams.get("redirect")).toBe(target);
+    expect(page.url()).not.toMatch(/evil/);
+
+    await page.waitForFunction(() => {
+      const form = document.querySelector("#si-email")?.closest("form");
+      if (!form) return false;
+      const key = Object.keys(form).find((item) => item.startsWith("__reactProps$"));
+      return Boolean(key && typeof (form as unknown as Record<string, { onSubmit?: unknown }>)[key]?.onSubmit === "function");
+    });
+    await page.locator("#si-email").fill(creds.email);
+    await page.locator("#si-pass").fill(creds.password);
+    await page.getByRole("tabpanel", { name: "Sign in" }).getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/account\?tab=quotes&ref=QT-20260922-ABCDEF/, { timeout: 20_000 });
+    await expect(page.getByRole("tab", { name: "Quote requests" })).toHaveAttribute("data-state", "active");
+    await expect(page).not.toHaveURL(/evil/);
+    await context.close();
+  });
+
+  test("empty checkout draft prefills contact details from the profile", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.sessionStorage.removeItem("tlb-form-draft:checkout");
+      window.localStorage.setItem(
+        "tlb-store-v1",
+        JSON.stringify({ cart: [{ id: "ac-002", qty: 1 }], quote: [] }),
+      );
+    });
+    await page.goto("/account");
+    await expect(page.getByRole("heading", { name: "Profile details" })).toBeVisible({ timeout: 15_000 });
+    const fullName = await page.getByLabel("Full name").inputValue();
+    const phone = await page.getByLabel("Phone").inputValue();
+    await page.goto("/checkout");
+    await expect(page.getByLabel("Email")).not.toHaveValue("", { timeout: 15_000 });
+    if (fullName) await expect(page.getByLabel("Contact name")).toHaveValue(fullName);
+    if (phone) await expect(page.getByLabel("Phone")).toHaveValue(phone);
   });
 
   test("safe redirect returns to checkout and quote; unsafe redirect stays internal", async ({ page }) => {
