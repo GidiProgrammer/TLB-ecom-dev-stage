@@ -13,6 +13,22 @@ test.describe("shop catalogue", () => {
     await expect(page.getByRole("article").first()).toBeVisible({ timeout: 15_000 });
   });
 
+  test("header search on the shop page keeps sort and in-stock", async ({ page }) => {
+    await page.goto("/shop?sort=price-asc&inStock=true");
+    await expect(page.getByRole("combobox", { name: "Sort products" })).toContainText("Price: low to high", {
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("checkbox", { name: "In stock only" })).toBeChecked();
+    const search = page.getByRole("searchbox", { name: "Search products" }).first();
+    await search.fill("methanol");
+    await search.press("Enter");
+    await expect(page).toHaveURL(/q=methanol/);
+    await expect(page).toHaveURL(/sort=price-asc/);
+    await expect(page).toHaveURL(/inStock=true/);
+    await expect(page.getByRole("combobox", { name: "Sort products" })).toContainText("Price: low to high");
+    await expect(page.getByRole("checkbox", { name: "In stock only" })).toBeChecked();
+  });
+
   test("search returns matching products", async ({ page }) => {
     await page.goto("/shop?q=methanol");
     await expect(page.getByRole("heading", { name: /Results for/ })).toBeVisible();

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Mail, Menu, Phone, Search, ShoppingCart, FileText, User } from "lucide-react";
 import { COMPANY } from "@/lib/catalog-utils";
+import { normalizeShopSort } from "@/lib/shop-search";
 import { useCategories } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -76,7 +77,18 @@ export function Header() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/shop", search: { q: q || undefined, category: cat === "all" ? undefined : cat } });
+    const search: { q?: string; category?: string; sort?: string; inStock?: true } = {};
+    if (q) search.q = q;
+    if (cat !== "all") search.category = cat;
+    if (location.pathname === "/shop") {
+      const params = new URLSearchParams(
+        location.search.startsWith("?") ? location.search.slice(1) : location.search,
+      );
+      const sort = normalizeShopSort(params.get("sort") ?? undefined);
+      if (sort) search.sort = sort;
+      if (params.get("inStock") === "true") search.inStock = true;
+    }
+    navigate({ to: "/shop", search });
     setMobileOpen(false);
   };
 
