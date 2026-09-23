@@ -15,7 +15,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 type AuthSearch = { redirect?: string | undefined };
 
 export const Route = createFileRoute("/auth")({
-  ssr: false,
+  // Keep the sign-in layout in the route module, and do not wrap it in a route
+  // Suspense boundary. A code-split boundary rendered a fallback on the server
+  // while the client hydrated the form.
+  codeSplitGroupings: [],
+  wrapInSuspense: false,
   validateSearch: (search: Record<string, unknown>): AuthSearch => ({
     redirect: parseRedirectSearch(search),
   }),

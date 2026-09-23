@@ -47,10 +47,21 @@ export function HomeHero() {
   const hovering = useRef(false);
   const focused = useRef(false);
   const pressing = useRef(false);
+  const endPressRef = useRef<(() => void) | null>(null);
 
   const syncPause = () => {
     setPaused(hovering.current || focused.current || pressing.current);
   };
+
+  useEffect(() => {
+    return () => {
+      const endPress = endPressRef.current;
+      if (!endPress) return;
+      window.removeEventListener("pointerup", endPress);
+      window.removeEventListener("pointercancel", endPress);
+      endPressRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (paused) return;
@@ -98,14 +109,17 @@ export function HomeHero() {
           onPointerDown={() => {
             pressing.current = true;
             syncPause();
-          }}
-          onPointerUp={() => {
-            pressing.current = false;
-            syncPause();
-          }}
-          onPointerCancel={() => {
-            pressing.current = false;
-            syncPause();
+            if (endPressRef.current) return;
+            const endPress = () => {
+              pressing.current = false;
+              window.removeEventListener("pointerup", endPress);
+              window.removeEventListener("pointercancel", endPress);
+              endPressRef.current = null;
+              syncPause();
+            };
+            endPressRef.current = endPress;
+            window.addEventListener("pointerup", endPress);
+            window.addEventListener("pointercancel", endPress);
           }}
           onFocus={() => {
             focused.current = true;
