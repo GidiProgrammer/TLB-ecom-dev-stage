@@ -92,7 +92,9 @@ test.describe("shop catalogue", () => {
   test("product detail loads", async ({ page }) => {
     await page.goto("/product/ac-002");
     await expect(page.getByRole("heading", { name: /Methanol/i })).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText("In stock", { exact: true }).first()).toBeVisible();
+    const specifications = page.getByRole("tabpanel", { name: "Specifications" });
+    await expect(specifications.getByText("Availability", { exact: true })).toBeVisible();
+    await expect(specifications.getByText("In stock", { exact: true })).toBeVisible();
   });
 
   test("out-of-stock product cannot be added to cart when the catalogue has one", async ({ page }) => {

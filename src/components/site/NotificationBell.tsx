@@ -18,7 +18,7 @@ function UnreadCount({ count }: { count: number }) {
   if (!count) return null;
   const label = count > 99 ? "99+" : String(count);
   return (
-    <span className="absolute right-1 top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-gold px-1 text-[11px] font-semibold text-gold-foreground">
+    <span className="absolute right-1 top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-primary px-1 text-[11px] font-semibold text-primary-foreground">
       {label}
     </span>
   );

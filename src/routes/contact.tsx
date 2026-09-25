@@ -72,6 +72,7 @@ function Contact() {
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_20rem]">
+        <div id="message" className="scroll-mt-[calc(var(--site-header-height)+1rem)]">
         {accepted ? (
           <div className="space-y-4 rounded-md border border-border p-6" role="status" aria-live="polite">
             <p className="text-sm">
@@ -170,15 +171,15 @@ function Contact() {
             <Button
               type="submit"
               disabled={busy}
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
               aria-describedby={error ? errorId : undefined}
             >
               {busy ? "Sending…" : "Send message"}
             </Button>
           </form>
         )}
+        </div>
 
-        <aside className="h-fit space-y-4 rounded-md border border-border bg-primary-soft p-6 text-sm">
+        <aside id="visit" className="h-fit scroll-mt-[calc(var(--site-header-height)+1rem)] space-y-4 rounded-md border border-border bg-primary-soft p-6 text-sm">
           <div className="flex gap-3">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <p>{COMPANY.address}</p>

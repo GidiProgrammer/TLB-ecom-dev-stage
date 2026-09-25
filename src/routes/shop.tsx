@@ -105,7 +105,7 @@ function Shop() {
       ) : (
         <>
           <header className="mt-3">
-            <h1 className="text-3xl font-semibold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               {category
                 ? category.name
                 : search.category && !categoriesReady
@@ -132,8 +132,8 @@ function Shop() {
                       onClick={() => setSearch({ category: undefined })}
                       className={
                         activeCategory === "all"
-                          ? "flex min-h-11 w-full items-center text-left font-semibold text-primary"
-                          : "flex min-h-11 w-full items-center text-left text-muted-foreground hover:text-primary"
+                          ? "flex min-h-11 w-full items-center border-l-2 border-gold bg-primary-soft px-3 text-left font-semibold text-primary"
+                          : "flex min-h-11 w-full items-center px-3 text-left text-foreground hover:bg-muted hover:text-primary"
                       }
                     >
                       All categories
@@ -150,8 +150,8 @@ function Shop() {
                         onClick={() => setSearch({ category: c.slug })}
                         className={
                           activeCategory === c.slug
-                            ? "flex min-h-11 w-full items-center text-left font-semibold text-primary"
-                            : "flex min-h-11 w-full items-center text-left text-muted-foreground hover:text-primary"
+                            ? "flex min-h-11 w-full items-center border-l-2 border-gold bg-primary-soft px-3 text-left font-semibold text-primary"
+                            : "flex min-h-11 w-full items-center px-3 text-left text-foreground hover:bg-muted hover:text-primary"
                         }
                       >
                         {c.name}
@@ -178,10 +178,10 @@ function Shop() {
 
               <div className="rounded-md border border-border bg-primary-soft p-4">
                 <p className="font-display text-sm font-bold">Need a quotation?</p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   Add items to a quote request and our team will review quantities and provide pricing.
                 </p>
-                <Button asChild size="sm" className="mt-3 w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button asChild size="sm" className="mt-3 w-full bg-gold text-gold-foreground hover:bg-gold-hover">
                   <Link to="/quote">Open quote request</Link>
                 </Button>
               </div>

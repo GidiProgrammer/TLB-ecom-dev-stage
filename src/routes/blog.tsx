@@ -29,7 +29,7 @@ function Blog() {
       <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {articles.map((a) => (
           <article key={a.slug} className="flex flex-col rounded-md border border-border bg-card p-5 transition-shadow hover:shadow-card">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">{a.category}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">{a.category}</p>
             <h2 className="mt-2 font-display text-base font-bold leading-snug">
               <Link to="/blog/$slug" params={{ slug: a.slug }} className="hover:text-primary">
                 {a.title}

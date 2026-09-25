@@ -133,7 +133,7 @@ function ProductDetail() {
               {product.categoryName}
             </p>
           ) : null}
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight leading-tight">{product.name}</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight leading-tight">{product.name}</h1>
           <div className="mt-3 flex items-center gap-2">
             <Badge variant={status === "in-stock" ? "default" : "secondary"}>
               {stockLabel(product.stock_quantity, product.low_stock_threshold)}
@@ -142,10 +142,10 @@ function ProductDetail() {
           </div>
 
           <div className="mt-6 flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tabular-nums tracking-tight text-primary">{formatGHS(product.price)}</span>
+            <span className="text-3xl font-bold tabular-nums tracking-tight text-primary">{formatGHS(product.price)}</span>
             <span className="text-sm text-muted-foreground">per {product.unit}</span>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             Prices exclude delivery. Request a quotation if you need organisation-specific pricing.
           </p>
 
@@ -171,7 +171,7 @@ function ProductDetail() {
                 />
                 <Button
                   size="lg"
-                  className="bg-accent text-accent-foreground hover:bg-accent/90"
+                  className="bg-gold text-gold-foreground hover:bg-gold-hover"
                   onClick={handleAddToCart}
                 >
                   <ShoppingCart className="h-4 w-4" /> Add to cart

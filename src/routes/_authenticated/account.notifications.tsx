@@ -39,7 +39,7 @@ function NotificationsPage() {
             <span aria-hidden> / </span>
             Notifications
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Notifications</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Notifications</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Order, quote, and account notices for this signed-in customer.
           </p>

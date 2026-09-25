@@ -64,7 +64,7 @@ function Account() {
     <div className="container-page min-w-0 py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Account dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Account dashboard</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">{user?.email}</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -206,7 +206,7 @@ function ProfileSection({
                   ? "bg-success text-success-foreground"
                   : query.data.approval_status === "rejected"
                     ? "bg-destructive text-destructive-foreground"
-                    : "bg-accent text-accent-foreground"
+                    : "bg-warning text-warning-foreground"
               }
             >
               {approvalPresentation(query.data)}

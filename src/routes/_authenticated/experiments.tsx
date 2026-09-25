@@ -285,7 +285,7 @@ function Experiments() {
             />
           </div>
           <Button
-            className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+            className="w-full bg-gold text-gold-foreground hover:bg-gold-hover"
             disabled={!name.trim() || create.isPending}
             onClick={() => create.mutate()}
           >

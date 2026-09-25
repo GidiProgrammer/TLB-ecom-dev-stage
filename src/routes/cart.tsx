@@ -153,13 +153,13 @@ function CartPage() {
 
   return (
     <div className="container-page py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Your cart</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Your cart</h1>
 
       {cart.length === 0 ? (
         <div className="mt-8 rounded-md border border-dashed border-border p-12 text-center">
           <p className="font-display text-lg font-bold">Your cart is empty</p>
           <p className="mt-2 text-sm text-muted-foreground">Browse the catalogue to add laboratory supplies.</p>
-          <Button asChild className="mt-5 bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button asChild className="mt-5">
             <Link to="/shop">Start shopping</Link>
           </Button>
         </div>
@@ -202,7 +202,7 @@ function CartPage() {
                 Proceed to checkout
               </Button>
             ) : (
-              <Button asChild className="mt-5 w-full bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button asChild className="mt-5 w-full bg-gold text-gold-foreground hover:bg-gold-hover">
                 <Link to="/checkout">Proceed to checkout</Link>
               </Button>
             )}

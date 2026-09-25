@@ -187,7 +187,7 @@ function Checkout() {
 
   return (
     <div className="container-page py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Checkout</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Checkout</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         No payment is taken online. Submit your order and we will confirm availability, delivery cost and
         invoicing terms.
@@ -273,7 +273,7 @@ function Checkout() {
           <Button
             type="submit"
             disabled={!user || busy || linesLoading || linesMissing || linesUnavailable}
-            className="mt-5 w-full bg-accent text-accent-foreground hover:bg-accent/90"
+            className="mt-5 w-full bg-gold text-gold-foreground hover:bg-gold-hover"
           >
             {busy ? "Submitting…" : "Place order"}
           </Button>

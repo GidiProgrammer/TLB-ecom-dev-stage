@@ -195,7 +195,7 @@ function QuotePage() {
 
   return (
     <div className="container-page py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Request a quote</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Request a quote</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         Add the products you need and tell us the quantities. Our team will review the request and provide
         pricing. This is not an invoice and no payment is taken online.
@@ -213,7 +213,7 @@ function QuotePage() {
       ) : null}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_22rem]">
-        <div>
+        <div id="quote-items" className="scroll-mt-[calc(var(--site-header-height)+1rem)]">
           <h2 className="font-display text-base font-bold">Items requested</h2>
           {quote.length === 0 ? (
             <div className="mt-3 rounded-md border border-dashed border-border p-10 text-center">
@@ -243,7 +243,7 @@ function QuotePage() {
           )}
         </div>
 
-        <form onSubmit={submit} className="h-fit space-y-4 rounded-md border border-border bg-card p-5">
+        <form id="quote-details" onSubmit={submit} className="h-fit scroll-mt-[calc(var(--site-header-height)+1rem)] space-y-4 rounded-md border border-border bg-card p-5">
           {submitError ? (
             <div
               role="alert"
@@ -290,7 +290,7 @@ function QuotePage() {
           <Button
             type="submit"
             disabled={!user || quote.length === 0 || busy || linesLoading || linesMissing}
-            className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+            className="w-full bg-gold text-gold-foreground hover:bg-gold-hover"
           >
             {busy ? "Submitting…" : "Submit quote request"}
           </Button>

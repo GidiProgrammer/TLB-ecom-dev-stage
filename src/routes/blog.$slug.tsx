@@ -51,13 +51,13 @@ function ArticlePage() {
       </nav>
 
       <article className="mx-auto mt-6 max-w-3xl">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">{article.category}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">{article.category}</p>
         <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight sm:text-4xl">{article.title}</h1>
         <p className="mt-3 text-xs text-muted-foreground">
           {new Date(article.date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} ·{" "}
           {article.readTime}
         </p>
-        <p className="mt-6 border-l-2 border-accent pl-4 text-base text-muted-foreground">{article.excerpt}</p>
+        <p className="mt-6 border-l-2 border-primary pl-4 text-base text-muted-foreground">{article.excerpt}</p>
         <div className="mt-6 space-y-4 text-[15px] leading-relaxed">
           {article.body.map((p, i) => (
             <p key={i}>{p}</p>
@@ -69,7 +69,7 @@ function ArticlePage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Our technical team advises on reagents, instruments and laboratory setup across Ghana.
           </p>
-          <Button asChild className="mt-4 bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button asChild className="mt-4">
             <Link to="/contact">Talk to us</Link>
           </Button>
         </div>

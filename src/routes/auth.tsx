@@ -176,7 +176,7 @@ function AuthPage() {
                     className="mt-1.5"
                   />
                 </div>
-                <Button type="submit" disabled={busy} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button type="submit" disabled={busy} className="w-full">
                   {busy ? "Sending…" : "Send reset instructions"}
                 </Button>
               </form>
@@ -208,7 +208,7 @@ function AuthPage() {
                 className="mt-1.5"
               />
             </div>
-            <Button type="submit" disabled={busy} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button type="submit" disabled={busy} className="w-full">
               {busy ? "Updating…" : "Update password"}
             </Button>
           </form>
@@ -245,7 +245,7 @@ function AuthPage() {
                     className="mt-1.5"
                   />
                 </div>
-                <Button type="submit" disabled={busy} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button type="submit" disabled={busy} className="w-full">
                   {busy ? "Signing in…" : "Sign in"}
                 </Button>
                 <button
@@ -362,7 +362,7 @@ function AuthPage() {
                   </div>
                 </div>
 
-                <Button type="submit" disabled={busy} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button type="submit" disabled={busy} className="w-full">
                   {busy ? "Creating account…" : "Create account"}
                 </Button>
                 <p className="text-xs text-muted-foreground">

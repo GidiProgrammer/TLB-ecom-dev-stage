@@ -30,7 +30,7 @@ const values = [
 function About() {
   return (
     <div>
-      <section className="bg-primary text-primary-foreground">
+      <section className="bg-deep-purple text-primary-foreground">
         <div className="container-page grid items-center gap-10 py-16 lg:grid-cols-2">
           <div>
             <h1 className="font-display text-4xl font-extrabold leading-tight">About TLB Enterprise</h1>
@@ -47,7 +47,7 @@ function About() {
       <section className="container-page py-16">
         <div className="grid gap-10 lg:grid-cols-[1.3fr_1fr]">
           <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
-            <h2 className="font-display text-2xl font-extrabold text-foreground">What we do</h2>
+            <h2 id="what-we-do" className="scroll-mt-[calc(var(--site-header-height)+1rem)] font-display text-2xl font-extrabold text-foreground">What we do</h2>
             <p>
               TLB Enterprise supplies analytical and industrial chemicals, benchtop and floor-standing
               equipment, borosilicate glassware, personal protective equipment, general consumables and
@@ -63,7 +63,7 @@ function About() {
               We can supply batch certificates of analysis for analytical-grade products. Ask our team when
               you order if you need documentation retained for audits.
             </p>
-            <h2 className="pt-4 font-display text-2xl font-extrabold text-foreground">Account types</h2>
+            <h2 id="account-types" className="scroll-mt-[calc(var(--site-header-height)+1rem)] pt-4 font-display text-2xl font-extrabold text-foreground">Account types</h2>
             <p>
               Individual accounts are ready to use after sign-up. Institutional accounts are reviewed by our
               team so we can recognise your organisation. You can request quotations, provide institutional
@@ -72,7 +72,7 @@ function About() {
             </p>
           </div>
 
-          <aside className="h-fit rounded-md border border-border bg-primary-soft p-6">
+          <aside id="visit" className="h-fit scroll-mt-[calc(var(--site-header-height)+1rem)] rounded-md border border-border bg-primary-soft p-6">
             <h2 className="font-display text-base font-bold">Visit us</h2>
             <dl className="mt-4 space-y-3 text-sm text-muted-foreground">
               <div>
@@ -92,18 +92,18 @@ function About() {
                 <dd>Monday to Friday, 8:00 – 17:00 · Saturday, 9:00 – 13:00</dd>
               </div>
             </dl>
-            <Button asChild className="mt-5 w-full bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button asChild className="mt-5 w-full">
               <Link to="/contact">Contact the team</Link>
             </Button>
           </aside>
         </div>
       </section>
 
-      <section className="bg-secondary/50 py-16">
+      <section id="how-we-work" className="scroll-mt-[calc(var(--site-header-height)+1rem)] bg-secondary/50 py-16">
         <div className="container-page grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {values.map((v) => (
             <div key={v.title} className="rounded-md border border-border bg-card p-5">
-              <v.icon className="h-5 w-5 text-accent" />
+              <v.icon className="h-5 w-5 text-primary" />
               <h3 className="mt-3 font-display text-sm font-bold">{v.title}</h3>
               <p className="mt-1.5 text-xs text-muted-foreground">{v.text}</p>
             </div>

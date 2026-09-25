@@ -24,50 +24,45 @@ export function ProductCard({ product, className }: { product: CatalogProduct; c
   };
 
   return (
-    <article className={cn("group flex flex-col overflow-hidden rounded-md border border-border bg-card transition-shadow hover:shadow-card", className)}>
+    <article className={cn("group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-[border-color,box-shadow] duration-200 hover:border-primary/35 hover:shadow-card", className)}>
       <Link
         to="/product/$id"
         params={{ id: product.id }}
-        className="relative block aspect-4/3 overflow-hidden bg-secondary"
+        className="relative block aspect-4/3 overflow-hidden bg-neutral-100"
       >
         <img
           src={product.image}
           alt={product.hasProductImage ? product.name : `Category illustration for ${product.name}`}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]"
         />
-        {!product.hasProductImage ? (
-          <span className="absolute bottom-2 left-2 rounded bg-background/90 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            Category illustration
-          </span>
-        ) : null}
       </Link>
 
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-3">
         {product.categoryName ? (
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="line-clamp-1 text-xs font-semibold uppercase tracking-wide text-primary">
             {product.categoryName}
           </p>
         ) : null}
-        <h3 className="mt-1 line-clamp-2 font-display text-sm font-bold leading-snug">
+        <h3 className="mt-1 line-clamp-2 min-h-[2.75rem] font-display text-base font-semibold leading-snug tracking-tight text-foreground">
           <Link to="/product/$id" params={{ id: product.id }} className="hover:text-primary">
             {product.name}
           </Link>
         </h3>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-1.5 text-sm text-muted-foreground">
           {stockLabel(product.stock_quantity, product.low_stock_threshold)}
         </p>
 
-        <div className="mt-3 flex items-baseline gap-1">
-          <span className="font-display text-lg font-extrabold text-primary">{formatGHS(product.price)}</span>
-          {product.unit ? <span className="text-xs text-muted-foreground">/ {product.unit}</span> : null}
+        <div className="mt-2 flex items-baseline gap-1">
+          <span className="font-display text-xl font-bold tracking-tight text-primary">{formatGHS(product.price)}</span>
+          {product.unit ? <span className="text-sm text-muted-foreground">/ {product.unit}</span> : null}
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-auto flex gap-2 pt-3">
           {canAdd ? (
             <Button
               size="sm"
-              className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+              className="flex-1 bg-gold text-gold-foreground hover:bg-gold-hover"
               onClick={handleAddToCart}
             >
               <ShoppingCart className="h-4 w-4" /> Add
