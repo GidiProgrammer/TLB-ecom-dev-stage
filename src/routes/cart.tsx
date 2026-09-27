@@ -165,7 +165,7 @@ function CartPage() {
         </div>
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_20rem]">
-          <div className="divide-y divide-border rounded-md border border-border">
+          <div className="divide-y divide-border rounded-card">
             {cart.map((line) => (
               <CartLine
                 key={line.id}
@@ -176,7 +176,7 @@ function CartPage() {
             ))}
           </div>
 
-          <aside className="h-fit rounded-md border border-border bg-card p-5">
+          <aside className="h-fit rounded-card bg-card p-5">
             <h2 className="font-display text-base font-bold">Order summary</h2>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between">

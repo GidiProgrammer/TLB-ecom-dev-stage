@@ -138,7 +138,7 @@ function AuthPage() {
 
   return (
     <div className="container-page grid gap-10 py-12 lg:grid-cols-[1fr_1.1fr]">
-      <div className="hidden rounded-lg bg-primary p-10 text-primary-foreground lg:block">
+      <div className="hidden rounded-card bg-primary p-10 text-primary-foreground lg:block">
         <BrandLogo className="h-16" />
         <h1 className="mt-6 font-display text-3xl font-extrabold leading-tight">
           Accounts built for laboratories
@@ -151,7 +151,7 @@ function AuthPage() {
         </ul>
       </div>
 
-      <div className="rounded-lg border border-border bg-card p-6 sm:p-8">
+      <div className="rounded-card bg-card p-6 sm:p-8">
         <h1 className="mb-6 font-display text-2xl font-extrabold leading-tight lg:hidden">
           Accounts built for laboratories
         </h1>

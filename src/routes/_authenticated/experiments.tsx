@@ -172,7 +172,7 @@ function Experiments() {
               return sum + (p ? p.price * i.qty : 0);
             }, 0);
             return (
-              <section key={exp.id} className="rounded-md border border-border bg-card p-5">
+              <section key={exp.id} className="rounded-card bg-card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="font-display text-base font-bold">{exp.name}</h2>
@@ -261,7 +261,7 @@ function Experiments() {
           })}
         </div>
 
-        <aside className="h-fit space-y-4 rounded-md border border-border bg-primary-soft p-5">
+        <aside className="h-fit space-y-4 rounded-card bg-primary-soft p-5">
           <h2 className="font-display text-base font-bold">New experiment</h2>
           <div>
             <Label htmlFor="exp-name">Name</Label>

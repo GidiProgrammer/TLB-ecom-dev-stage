@@ -8,23 +8,30 @@ import { Table } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 export function AdminPageStack({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("flex min-h-full flex-1 flex-col gap-3", className)}>{children}</div>;
+  return <div className={cn("flex min-h-full flex-1 flex-col gap-6", className)}>{children}</div>;
 }
 
 export function AdminPageHeader({
   title,
   description,
+  eyebrow,
   action,
 }: {
   title: string;
   description?: string;
+  eyebrow?: string;
   action?: ReactNode;
 }) {
   return (
-    <div className="flex shrink-0 items-center justify-between gap-3">
+    <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
-        {description ? <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p> : null}
+        {eyebrow ? (
+          <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">{eyebrow}</p>
+        ) : null}
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">{title}</h1>
+        {description ? (
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+        ) : null}
       </div>
       {action}
     </div>
@@ -43,7 +50,7 @@ export function AdminPanel({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl bg-card shadow-card",
+        "admin-panel overflow-hidden rounded-lg",
         fill && "flex min-h-[22rem] flex-1 flex-col",
         className,
       )}
@@ -65,10 +72,11 @@ export function AdminTable({ className, ...props }: ComponentProps<typeof Table>
   return (
     <Table
       className={cn(
-        "[&_thead_tr]:border-transparent [&_thead_tr]:bg-admin-table [&_thead_tr]:hover:bg-admin-table",
-        "[&_th]:h-12 [&_th]:px-5 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground",
-        "[&_td]:px-5 [&_td]:py-3.5 [&_td]:text-sm",
-        "[&_tbody_tr]:border-neutral-100 [&_tbody_tr]:hover:bg-admin-row-hover",
+        "admin-data-table",
+        "[&_thead_tr]:border-transparent [&_thead_tr]:bg-transparent [&_thead_tr]:hover:bg-transparent",
+        "[&_th]:h-10 [&_th]:border-0 [&_th]:px-5 [&_th]:text-[0.6875rem] [&_th]:font-semibold [&_th]:tracking-[0.05em] [&_th]:text-muted-foreground [&_th]:uppercase",
+        "[&_td]:border-0 [&_td]:px-5 [&_td]:py-3.5 [&_td]:text-sm",
+        "[&_tbody_tr]:border-0",
         "[&_tbody_tr[data-state=selected]]:bg-primary-soft",
         className,
       )}
@@ -98,7 +106,7 @@ export function AdminIconButton({
       variant="ghost"
       size="icon"
       {...props}
-      className={cn("h-11 w-11 rounded-lg bg-muted text-muted-foreground hover:bg-neutral-100 hover:text-foreground", className)}
+      className={cn("h-11 w-11 rounded-lg bg-muted text-muted-foreground hover:bg-primary-soft hover:text-foreground", className)}
       aria-label={label}
       title={label}
     >
@@ -139,13 +147,13 @@ export function AdminSearch({
   return (
     <label className="relative block w-full max-w-xs sm:max-w-sm">
       <span className="sr-only">{label}</span>
-      <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden />
+      <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
       <Input
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search"
-        className="h-11 rounded-lg border-neutral-200 bg-admin-table py-1 pr-4 pl-10 shadow-none"
+        className="h-11 rounded-lg border-border bg-admin-table py-1 pr-4 pl-10 shadow-none"
       />
     </label>
   );

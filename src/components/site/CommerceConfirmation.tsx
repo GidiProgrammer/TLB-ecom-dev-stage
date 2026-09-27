@@ -39,7 +39,7 @@ export function ConfirmationFound({
   return (
     <div className="container-page py-12">
       <h1 className="text-center text-2xl font-semibold tracking-tight">{heading}</h1>
-      <div className="mx-auto mt-8 max-w-3xl rounded-lg border border-border bg-card">{children}</div>
+      <div className="mx-auto mt-8 max-w-3xl rounded-card bg-card">{children}</div>
       <div className="mt-6 flex justify-center">
         <Button asChild className="min-h-11">
           <Link to="/account" search={accountSearch}>

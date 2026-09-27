@@ -176,7 +176,7 @@ function Shop() {
                   </div>
                 </div>
 
-              <div className="rounded-md border border-border bg-primary-soft p-4">
+              <div className="rounded-card bg-primary-soft p-4">
                 <p className="font-display text-sm font-bold">Need a quotation?</p>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   Add items to a quote request and our team will review quantities and provide pricing.

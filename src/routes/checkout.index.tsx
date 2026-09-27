@@ -193,7 +193,7 @@ function Checkout() {
         invoicing terms.
       </p>
       {!user ? (
-        <div className="mt-6 rounded-md border border-border bg-primary-soft px-4 py-3 text-sm">
+        <div className="mt-6 rounded-card bg-primary-soft px-4 py-3 text-sm">
           <p className="font-semibold">Sign in to complete your order.</p>
           <p className="mt-1 text-muted-foreground">Your cart and delivery details stay on this device until you return.</p>
           <Button asChild size="sm" className="mt-3">
@@ -205,7 +205,7 @@ function Checkout() {
       ) : null}
 
       <form onSubmit={submit} className="mt-8 grid gap-8 lg:grid-cols-[1fr_20rem]">
-        <div className="space-y-5 rounded-md border border-border p-6">
+        <div className="space-y-5 rounded-card bg-card p-6">
           {submitError && (
             <div
               role="alert"
@@ -259,7 +259,7 @@ function Checkout() {
           </div>
         </div>
 
-        <aside className="h-fit rounded-md border border-border bg-card p-5">
+        <aside className="h-fit rounded-card bg-card p-5">
           <h2 className="font-display text-base font-bold">Your order</h2>
           <ul className="mt-4 space-y-2 text-sm">
             {cart.map((line) => (

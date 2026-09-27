@@ -201,7 +201,7 @@ function QuotePage() {
         pricing. This is not an invoice and no payment is taken online.
       </p>
       {!user ? (
-        <div className="mt-6 rounded-md border border-border bg-primary-soft px-4 py-3 text-sm">
+        <div className="mt-6 rounded-card bg-primary-soft px-4 py-3 text-sm">
           <p className="font-semibold">Sign in to submit a quote request.</p>
           <p className="mt-1 text-muted-foreground">Your list and contact details stay on this device until you return.</p>
           <Button asChild size="sm" className="mt-3">
@@ -225,7 +225,7 @@ function QuotePage() {
               </Button>
             </div>
           ) : (
-            <div className="mt-3 divide-y divide-border rounded-md border border-border">
+            <div className="mt-3 divide-y divide-border rounded-card">
               {quote.map((line) => (
                 <QuoteLine
                   key={line.id}
@@ -243,7 +243,7 @@ function QuotePage() {
           )}
         </div>
 
-        <form id="quote-details" onSubmit={submit} className="h-fit scroll-mt-[calc(var(--site-header-height)+1rem)] space-y-4 rounded-md border border-border bg-card p-5">
+        <form id="quote-details" onSubmit={submit} className="h-fit scroll-mt-[calc(var(--site-header-height)+1rem)] space-y-4 rounded-card bg-card p-5">
           {submitError ? (
             <div
               role="alert"

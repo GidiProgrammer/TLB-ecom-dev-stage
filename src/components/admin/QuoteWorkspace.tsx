@@ -192,7 +192,7 @@ function QuoteRow({
       </TableRow>
       {expanded ? (
         <TableRow>
-          <TableCell colSpan={6} className="bg-neutral-50">
+          <TableCell colSpan={6} className="bg-admin-table">
             <ul className="space-y-2 px-1 py-2">
               {quote.quote_items.map((item) => (
                 <QuoteItemPriceRow

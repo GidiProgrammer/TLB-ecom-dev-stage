@@ -1,5 +1,6 @@
+import { Fragment } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BadgeCheck, FileText, Headphones, Truck } from "lucide-react";
+import { FileText, Headphones, Search, ShieldCheck, ShoppingCart, Truck } from "lucide-react";
 import { COMPANY } from "@/lib/catalog-utils";
 import { useNewestInCatalogue, useCategories, useProducts } from "@/lib/queries/products";
 import { HomeHero } from "@/components/site/HomeHero";
@@ -7,6 +8,7 @@ import { HomeCategoryRail } from "@/components/site/HomeCategoryRail";
 import { HomeProductRail } from "@/components/site/HomeProductRail";
 import { HomePromoTiles } from "@/components/site/HomePromoTiles";
 import { HomeExploreProducts } from "@/components/site/HomeExploreProducts";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,7 +31,7 @@ export const Route = createFileRoute("/")({
 });
 
 const promises = [
-  { icon: BadgeCheck, title: "Documented quality", text: "Ask us for batch certificates of analysis on analytical-grade items." },
+  { icon: ShieldCheck, title: "Documented quality", text: "Ask us for batch certificates of analysis on analytical-grade items." },
   { icon: Truck, title: "Delivery arranged", text: "Accra and regional delivery can be arranged after we confirm your order." },
   { icon: FileText, title: "Quotations", text: "Request a quote for tenders, purchase orders and bulk supply." },
   { icon: Headphones, title: "Technical questions", text: "Ask us about product selection and the documentation you need for your lab." },
@@ -44,16 +46,23 @@ function Home() {
     <div className="bg-background">
       <HomeHero />
 
-      <section className="border-b border-border bg-card">
-        <div className="container-page grid gap-x-6 gap-y-4 py-4 sm:grid-cols-2 lg:grid-cols-4 lg:py-5">
-          {promises.map((p) => (
-            <div key={p.title} className="flex gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <p.icon className="h-4 w-4" aria-hidden />
+      <section className="border-y border-border bg-card">
+        <div className="container-page grid gap-x-0 gap-y-2 py-2 sm:grid-cols-2 lg:grid-cols-4">
+          {promises.map((p, index) => (
+            <div
+              key={p.title}
+              className={cn(
+                "flex items-center gap-4 px-1 py-6 sm:px-6",
+                index % 2 === 1 && "sm:border-l sm:border-border",
+                index > 0 && "lg:border-l lg:border-border",
+              )}
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+                <p.icon className="h-5 w-5" aria-hidden />
               </span>
               <div className="min-w-0">
-                <h2 className="font-display text-sm font-semibold tracking-tight text-foreground">{p.title}</h2>
-                <p className="mt-0.5 text-sm leading-snug text-muted-foreground">{p.text}</p>
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">{p.title}</h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{p.text}</p>
               </div>
             </div>
           ))}
@@ -73,28 +82,38 @@ function Home() {
         excludeIds={(featured ?? []).map((product) => product.id)}
       />
 
-      <section id="ordering" className="container-page scroll-mt-[calc(var(--site-header-height)+1rem)] py-10">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">How ordering works</h2>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Catalogue orders and quotation requests follow the same confirmation process.
-        </p>
-        <ol className="mt-5 grid gap-3 sm:grid-cols-3">
-          {[
-            ["1", "Browse the catalogue", "Find chemicals, glassware, equipment and consumables with Ghana cedi list prices."],
-            ["2", "Order or request a quote", "Place an order from your cart, or send a quote list for our team to price."],
-            ["3", "We confirm offline", "Availability, delivery and invoicing are arranged with TLB after we receive your request."],
-          ].map(([step, title, text]) => (
-            <li key={step} className="flex gap-3 rounded-lg border border-border/70 bg-card px-4 py-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                {step}
-              </span>
-              <div className="min-w-0">
-                <h3 className="font-display text-sm font-semibold tracking-tight">{title}</h3>
-                <p className="mt-1 text-sm leading-snug text-muted-foreground">{text}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+      <section id="ordering" className="scroll-mt-[calc(var(--site-header-height)+1rem)] bg-primary-soft">
+        <div className="container-page py-10">
+          <h2 className="text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">How ordering works</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Catalogue orders and quotation requests follow the same simple process.
+          </p>
+          <ol className="mt-8 grid list-none gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-stretch">
+            {[
+              { step: "1", title: "Browse the catalogue", text: "Find chemicals, glassware, equipment and consumables with Ghana cedi list prices.", icon: Search },
+              { step: "2", title: "Order or request a quote", text: "Place an order from your cart, or send a quote list for our team to price.", icon: ShoppingCart },
+              { step: "3", title: "We confirm offline", text: "Availability, delivery and invoicing are arranged with TLB after we receive your request.", icon: Truck },
+            ].map((item, index) => (
+              <Fragment key={item.step}>
+                {index > 0 ? (
+                  <span className="hidden items-center justify-center text-2xl tracking-[0.35em] text-neutral-300 lg:flex" aria-hidden>
+                    ····
+                  </span>
+                ) : null}
+                <li className="rounded-card bg-card p-5">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary">
+                      {item.step}
+                    </span>
+                    <item.icon className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                    <h3 className="text-sm font-semibold tracking-tight text-foreground">{item.title}</h3>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{item.text}</p>
+                </li>
+              </Fragment>
+            ))}
+          </ol>
+        </div>
       </section>
 
       <section className="border-t border-border bg-card py-8">

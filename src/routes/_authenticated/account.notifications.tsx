@@ -63,7 +63,7 @@ function NotificationsPage() {
         ) : list.isError ? (
           <p className="text-sm text-destructive">Could not load notifications.</p>
         ) : !list.data?.length ? (
-          <p className="border border-border bg-card p-6 text-sm text-muted-foreground">
+          <p className="bg-card p-6 text-sm text-muted-foreground">
             No notifications yet.
           </p>
         ) : (
@@ -91,7 +91,7 @@ function NotificationArticle({
   return (
     <article
       className={cn(
-        "flex flex-col gap-3 border border-border bg-card p-4 sm:flex-row sm:items-start sm:justify-between",
+        "flex flex-col gap-3 bg-card p-4 sm:flex-row sm:items-start sm:justify-between",
         unread ? "border-l-4 border-l-primary" : "",
       )}
     >

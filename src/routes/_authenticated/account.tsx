@@ -159,7 +159,7 @@ function ProfileSection({
 }) {
   if (query.isLoading) {
     return (
-      <div className="mt-6 rounded-md border border-border bg-card p-5">
+      <div className="mt-6 rounded-card bg-card p-5">
         <p className="text-sm text-muted-foreground">Loading account details…</p>
       </div>
     );
@@ -178,7 +178,7 @@ function ProfileSection({
 
   if (!query.data) {
     return (
-      <div className="mt-6 rounded-md border border-border bg-card p-5">
+      <div className="mt-6 rounded-card bg-card p-5">
         <p className="font-display text-sm font-bold">Account profile not found</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Your sign-in works, but we could not find a profile record for this account. Contact us if this continues.
@@ -190,14 +190,14 @@ function ProfileSection({
   return (
     <>
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-md border border-border bg-card p-5">
+        <div className="rounded-card bg-card p-5">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Account type</p>
           <p className="mt-1 font-display text-lg font-bold">{accountTypeLabel(query.data.account_type)}</p>
           {query.data.institution_name ? (
             <p className="text-xs text-muted-foreground">{query.data.institution_name}</p>
           ) : null}
         </div>
-        <div className="rounded-md border border-border bg-card p-5">
+        <div className="rounded-card bg-card p-5">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Account status</p>
           <div className="mt-2">
             <Badge
@@ -213,7 +213,7 @@ function ProfileSection({
             </Badge>
           </div>
         </div>
-        <div className="rounded-md border border-border bg-card p-5">
+        <div className="rounded-card bg-card p-5">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Contact</p>
           <p className="mt-1 text-sm font-medium">{query.data.full_name ?? "—"}</p>
           <p className="text-xs text-muted-foreground">{query.data.phone ?? "No phone on file"}</p>
@@ -269,7 +269,7 @@ function ProfileEditor({ profile, userId }: { profile: AccountProfile; userId: s
   };
 
   return (
-    <form onSubmit={save} className="mt-6 rounded-md border border-border bg-card p-5">
+    <form onSubmit={save} className="mt-6 rounded-card bg-card p-5">
       <h2 className="text-base font-semibold">Profile details</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Update the contact details we use for orders and quotations. Account type and status cannot be changed here.
@@ -371,15 +371,15 @@ function HistoryPanel({
     return (
       <div className="space-y-2" aria-busy="true" aria-live="polite">
         <p className="sr-only">{loadingLabel}</p>
-        <Skeleton className="h-24 w-full rounded-lg" />
-        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-card" />
+        <Skeleton className="h-24 w-full rounded-card" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="rounded-lg border border-destructive/40 bg-card p-5" role="alert">
+      <div className="rounded-card border border-destructive/40 bg-card p-5" role="alert">
         <p className="text-sm text-destructive">{errorLabel}</p>
         <Button type="button" variant="outline" className="mt-4 min-h-11" onClick={onRetry}>
           Try again
@@ -404,14 +404,14 @@ function HistoryPanel({
           Showing {kind === "orders" ? "order" : "quote request"} {refValue}
         </p>
       ) : null}
-      <div className="divide-y divide-border rounded-lg border border-border">{children}</div>
+      <div className="divide-y divide-border rounded-card">{children}</div>
     </div>
   );
 }
 
 function EmptyState({ label, cta, to }: { label: string; cta: string; to: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-border p-10 text-center">
+    <div className="rounded-card border border-dashed border-border p-10 text-center">
       <p className="text-sm text-muted-foreground">{label}</p>
       <Button asChild variant="outline" className="mt-4">
         <Link to={to}>{cta}</Link>

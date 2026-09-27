@@ -71,7 +71,7 @@ export function AccountOrderCard({
       ref={articleRef}
       id={`order-${order.reference}`}
       aria-current={highlighted ? "true" : undefined}
-      className={cn("rounded-lg p-4", highlighted ? "border-l-4 border-l-primary bg-muted/40" : "")}
+      className={cn("rounded-card p-4", highlighted ? "border-l-4 border-l-primary bg-muted/40" : "")}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>

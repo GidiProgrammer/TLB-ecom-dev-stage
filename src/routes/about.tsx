@@ -40,7 +40,7 @@ function About() {
               operators.
             </p>
           </div>
-          <img src={heroLab} alt="Laboratory bench with instruments" className="rounded-lg shadow-pop" />
+          <img src={heroLab} alt="Laboratory bench with instruments" className="rounded-card shadow-pop" />
         </div>
       </section>
 
@@ -72,7 +72,7 @@ function About() {
             </p>
           </div>
 
-          <aside id="visit" className="h-fit scroll-mt-[calc(var(--site-header-height)+1rem)] rounded-md border border-border bg-primary-soft p-6">
+          <aside id="visit" className="h-fit scroll-mt-[calc(var(--site-header-height)+1rem)] rounded-card bg-primary-soft p-6">
             <h2 className="font-display text-base font-bold">Visit us</h2>
             <dl className="mt-4 space-y-3 text-sm text-muted-foreground">
               <div>
@@ -102,7 +102,7 @@ function About() {
       <section id="how-we-work" className="scroll-mt-[calc(var(--site-header-height)+1rem)] bg-secondary/50 py-16">
         <div className="container-page grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {values.map((v) => (
-            <div key={v.title} className="rounded-md border border-border bg-card p-5">
+            <div key={v.title} className="rounded-card bg-card p-5">
               <v.icon className="h-5 w-5 text-primary" />
               <h3 className="mt-3 font-display text-sm font-bold">{v.title}</h3>
               <p className="mt-1.5 text-xs text-muted-foreground">{v.text}</p>

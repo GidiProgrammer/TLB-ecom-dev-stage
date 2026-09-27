@@ -64,7 +64,7 @@ function ArticlePage() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-md border border-border bg-primary-soft p-6">
+        <div className="mt-10 rounded-card bg-primary-soft p-6">
           <p className="font-display text-base font-bold">Need help applying this in your laboratory?</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Our technical team advises on reagents, instruments and laboratory setup across Ghana.

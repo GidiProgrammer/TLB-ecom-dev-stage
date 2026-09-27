@@ -5,6 +5,7 @@ import { formatGHS } from "@/lib/catalog-utils";
 import { listAdminProducts } from "@/lib/catalog-ops";
 import { useAdminOrders, useAdminQuotes, useAdminProfiles } from "@/lib/queries/admin";
 import { AdminLoading, AdminPageHeader, AdminPageStack, AdminPanel } from "@/components/admin/AdminPageHeader";
+import { cn } from "@/lib/utils";
 import { OrderWorkspace } from "@/components/admin/OrderWorkspace";
 import { privatePageHead } from "@/lib/seo";
 
@@ -38,12 +39,11 @@ function AdminOverview() {
   const listedValue = orderRows.reduce((s, o) => s + Number(o.total), 0);
 
   const kpis = [
-    { label: "Orders", value: String(orderRows.length), tone: "bg-muted" },
-    { label: "Pending orders", value: String(pendingOrders.length), tone: "bg-warning/10" },
-    { label: "Quotes", value: String(quoteRows.length), tone: "bg-success/10" },
-    { label: "Active products", value: String(activeProducts.length), tone: "bg-primary-soft" },
-    { label: "Accounts", value: String(profileRows.length), tone: "bg-muted" },
-    { label: "Listed order value", value: formatGHS(listedValue), tone: "bg-muted" },
+    { label: "Orders", value: String(orderRows.length), tone: "admin-kpi--violet" },
+    { label: "Pending orders", value: String(pendingOrders.length), tone: "admin-kpi--gold" },
+    { label: "Quotes", value: String(quoteRows.length), tone: "admin-kpi--teal" },
+    { label: "Active products", value: String(activeProducts.length), tone: "admin-kpi--sky" },
+    { label: "Accounts", value: String(profileRows.length), tone: "admin-kpi--sand" },
   ];
 
   const attention = [
@@ -56,32 +56,40 @@ function AdminOverview() {
   return (
     <AdminPageStack>
       <AdminPageHeader
+        eyebrow="Staff"
         title="Overview"
         description="Organisation-wide orders, quotes, accounts and catalogue coverage for TLB staff."
       />
 
-      <dl className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <div className="admin-kpi-featured col-span-2 flex min-w-0 flex-col justify-between rounded-lg px-5 py-5 sm:col-span-3 xl:col-span-2 xl:row-span-2">
+          <p className="text-xs font-medium text-muted-foreground">Listed order value</p>
+          <p className="mt-3 text-4xl font-bold tracking-tight text-foreground tabular-nums sm:text-5xl">
+            {formatGHS(listedValue)}
+          </p>
+          <p className="mt-3 text-xs text-muted-foreground">All listed orders</p>
+        </div>
         {kpis.map((kpi) => (
           <div
             key={kpi.label}
-            className={`flex min-w-0 flex-col-reverse rounded-xl px-4 py-3.5 shadow-card ${kpi.tone}`}
+            className={cn("admin-kpi flex min-h-32 min-w-0 flex-col justify-between rounded-lg px-4 py-4", kpi.tone)}
           >
-            <dt className="mt-1 truncate text-xs text-neutral-500">{kpi.label}</dt>
-            <dd className="text-xl font-semibold tabular-nums tracking-tight text-foreground">{kpi.value}</dd>
+            <p className="truncate text-xs font-medium text-muted-foreground">{kpi.label}</p>
+            <p className="mt-3 text-3xl font-bold tracking-tight text-foreground tabular-nums">{kpi.value}</p>
           </div>
         ))}
-      </dl>
+      </div>
       {orders.isLoading || quotes.isLoading || profiles.isLoading || catalogue.isLoading || attention.length === 0 ? null : (
         <AdminPanel className="shrink-0">
-          <div className="flex flex-col divide-y divide-neutral-100 sm:flex-row sm:divide-x sm:divide-y-0">
+          <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
             {attention.map((item) => (
               <Link
                 key={item.label}
                 to={item.to}
                 className="flex min-h-11 flex-1 items-center justify-between gap-3 px-5 py-3 text-sm transition-colors hover:bg-admin-row-hover"
               >
-                <span className="text-neutral-500">{item.label}</span>
-                <span className="tabular-nums font-semibold text-neutral-950">{item.count}</span>
+                <span className="text-muted-foreground">{item.label}</span>
+                <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-sm font-semibold text-primary tabular-nums">{item.count}</span>
               </Link>
             ))}
           </div>
@@ -90,7 +98,7 @@ function AdminOverview() {
 
       <div>
         <div className="mb-3 flex items-end justify-between">
-          <h2 className="text-base font-semibold tracking-tight">Recent orders</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Recent orders</h2>
           <Link to="/admin/orders" className="text-sm font-medium text-primary hover:underline">
             All orders
           </Link>

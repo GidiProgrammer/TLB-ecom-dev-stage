@@ -1,13 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, ShoppingCart, FileText, User } from "lucide-react";
+import { ChevronDown, Menu, Search, ShoppingCart, FileText, User } from "lucide-react";
 import { COMPANY } from "@/lib/catalog-utils";
 import { normalizeShopSort } from "@/lib/shop-search";
 import { useCategories } from "@/lib/queries/products";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/site/BrandLogo";
-import { NotificationBell } from "@/components/site/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,10 +19,9 @@ import {
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-function CountBadge({ count }: { count: number }) {
-  if (!count) return null;
+function CartCount({ count }: { count: number }) {
   return (
-    <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-gold px-1 text-[11px] font-semibold text-gold-foreground">
+    <span className="absolute -right-2 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-neutral-900 px-1 text-[10px] font-semibold leading-none text-white">
       {count}
     </span>
   );
@@ -150,7 +148,7 @@ export function Header() {
   const [cat, setCat] = useState("all");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { cartCount, quoteCount } = useStore();
+  const { cartCount } = useStore();
   const { data: categories } = useCategories();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -199,120 +197,132 @@ export function Header() {
     setMobileOpen(false);
   };
 
-  return (
-    <header ref={headerRef} className="sticky top-0 z-50 border-b border-border bg-card">
-      <div className="container-page flex min-h-16 items-center gap-3 py-2.5">
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="min-h-11 min-w-11 lg:hidden" aria-label="Open menu">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-80 overflow-y-auto p-6" aria-describedby={undefined}>
-            <SheetTitle className="absolute h-px w-px overflow-hidden whitespace-nowrap p-0 [clip:rect(0,0,0,0)]">
-              Menu
-            </SheetTitle>
-            <BrandLogo className="h-12" />
-            <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Categories
-            </p>
-            <nav className="mt-3 flex flex-col" aria-label="Product categories">
-              {(categories ?? []).map((c) => (
-                <Link
-                  key={c.slug}
-                  to="/shop"
-                  search={{ category: c.slug }}
-                  onClick={() => setMobileOpen(false)}
-                  className="flex min-h-11 items-center border-b border-border text-sm"
-                >
-                  {c.name}
-                </Link>
-              ))}
-            </nav>
-            <nav className="mt-6 flex flex-col text-sm" aria-label="Site">
-              {publicNav.map((item) => (
-                <div key={item.id} className="border-b border-border py-1">
-                  <Link
-                    to={item.to}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex min-h-11 items-center font-semibold"
-                  >
-                    {item.label}
-                  </Link>
-                  <ul className="pb-2">
-                    {item.links.map((link) => (
-                      <li key={link.label}>
-                        <DeepLinkItem link={link} onNavigate={() => setMobileOpen(false)} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </nav>
-          </SheetContent>
-        </Sheet>
+  const searchFields = (
+    <>
+      <Select value={cat} onValueChange={setCat}>
+        <SelectTrigger className="h-9 min-h-9 w-[9.25rem] shrink-0 rounded-full border border-border bg-card px-3 text-sm shadow-none focus:ring-2 focus:ring-ring">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All categories</SelectItem>
+          {(categories ?? []).map((c) => (
+            <SelectItem key={c.slug} value={c.slug}>
+              {c.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input
+        type="search"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search for products, chemicals, equipment..."
+        aria-label="Search products"
+        className="h-9 min-h-0 flex-1 rounded-none border-0 bg-transparent px-3 shadow-none focus-visible:ring-0"
+      />
+      <Button type="submit" size="icon" className="h-10 min-h-10 w-10 shrink-0 rounded-full" aria-label="Search">
+        <Search className="h-4 w-4" aria-hidden />
+      </Button>
+    </>
+  );
 
+  return (
+    <header ref={headerRef} className="sticky top-0 z-50 border-b border-border bg-background">
+      <div className="container-page flex min-h-16 items-center gap-3 py-3 lg:gap-5">
         <Link to="/" className="flex min-h-11 shrink-0 items-center">
           <BrandLogo className="h-11" />
         </Link>
 
-        <form onSubmit={submit} className="mx-auto hidden min-h-11 max-w-xl flex-1 items-stretch rounded-md border border-border bg-card shadow-sm md:flex">
-          <Select value={cat} onValueChange={setCat}>
-            <SelectTrigger className="h-11 min-h-11 w-28 shrink-0 rounded-none border-0 border-r border-border bg-neutral-50 shadow-none">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {(categories ?? []).map((c) => (
-                <SelectItem key={c.slug} value={c.slug}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search for products…"
-            aria-label="Search products"
-            className="h-11 min-h-11 rounded-none border-0 shadow-none"
-          />
-          <Button type="submit" className="h-11 min-h-11 rounded-none px-5">
-            Search
-          </Button>
+        <form
+          onSubmit={submit}
+          className="mx-auto hidden h-12 min-w-0 max-w-xl flex-1 items-center gap-1 rounded-full border border-border bg-neutral-50 py-1 pl-1.5 pr-1 lg:flex"
+        >
+          {searchFields}
         </form>
 
-        <nav className="ml-auto flex items-center gap-1" aria-label="Account and commerce">
-          <Button asChild variant="ghost" className="relative h-11 min-h-11 gap-1.5 px-2.5">
-            <Link to="/quote" aria-label="Quote">
-              <FileText className="h-4 w-4" aria-hidden />
-              <span className="hidden sm:inline">Quote</span>
-              <CountBadge count={quoteCount} />
-            </Link>
-          </Button>
-          <Button asChild variant="ghost" className="relative h-11 min-h-11 gap-1.5 px-2.5">
-            <Link to="/cart" aria-label="Cart">
+        <nav className="ml-auto flex items-center gap-1 sm:gap-2" aria-label="Account and commerce">
+          <Link
+            to="/quote"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-medium text-neutral-700 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <FileText className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="hidden lg:inline">Request a quote</span>
+          </Link>
+          <Link
+            to="/cart"
+            aria-label={`Cart, ${cartCount} items`}
+            className="inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-medium text-neutral-700 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="relative">
               <ShoppingCart className="h-4 w-4" aria-hidden />
-              <span className="hidden sm:inline">Cart</span>
-              <CountBadge count={cartCount} />
-            </Link>
-          </Button>
-          <NotificationBell />
-          <Button asChild variant="outline" className="h-11 min-h-11 gap-1.5 px-3">
-            <Link to={user ? "/account" : "/auth"} activeOptions={{ exact: true }}>
-              <User className="h-4 w-4" aria-hidden />
-              <span>{user ? "Account" : "Sign in"}</span>
-            </Link>
-          </Button>
-          <Button asChild className="h-11 min-h-11 px-3">
-            <Link to="/contact">Contact</Link>
+              <CartCount count={cartCount} />
+            </span>
+            <span className="hidden sm:inline">Cart</span>
+          </Link>
+          <Link
+            to={user ? "/account" : "/auth"}
+            activeOptions={{ exact: true }}
+            className="inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-medium text-neutral-700 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <User className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="hidden md:inline">Account</span>
+          </Link>
+          <Button asChild className="h-10 min-h-10 rounded-full px-4">
+            <Link to="/contact">Contact us</Link>
           </Button>
         </nav>
       </div>
 
-      <div className="border-t border-white/10 bg-deep-purple text-white">
-        <div className="container-page flex min-h-11 items-center gap-2 text-sm">
+      <div className="border-t border-primary bg-primary text-white">
+        <div className="container-page flex min-h-11 items-center gap-1 text-sm">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="min-h-11 min-w-11 text-white hover:bg-white/10 hover:text-white lg:hidden" aria-label="Open menu">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80 overflow-y-auto p-6" aria-describedby={undefined}>
+              <SheetTitle className="absolute h-px w-px overflow-hidden whitespace-nowrap p-0 [clip:rect(0,0,0,0)]">
+                Menu
+              </SheetTitle>
+              <BrandLogo className="h-12" />
+              <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Categories</p>
+              <nav className="mt-3 flex flex-col" aria-label="Product categories">
+                {(categories ?? []).map((c) => (
+                  <Link
+                    key={c.slug}
+                    to="/shop"
+                    search={{ category: c.slug }}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex min-h-11 items-center border-b border-border text-sm"
+                  >
+                    {c.name}
+                  </Link>
+                ))}
+              </nav>
+              <nav className="mt-6 flex flex-col text-sm" aria-label="Site">
+                {publicNav.map((item) => (
+                  <div key={item.id} className="border-b border-border py-1">
+                    <Link
+                      to={item.to}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex min-h-11 items-center font-semibold"
+                    >
+                      {item.label}
+                    </Link>
+                    <ul className="pb-2">
+                      {item.links.map((link) => (
+                        <li key={link.label}>
+                          <DeepLinkItem link={link} onNavigate={() => setMobileOpen(false)} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           <div
             className="relative"
             onMouseEnter={() => setOpenMenu("categories")}
@@ -330,15 +340,17 @@ export function Header() {
               onKeyDown={(e) => {
                 if (e.key === "Escape") setOpenMenu(null);
               }}
-              className="flex min-h-11 items-center gap-2 border-r border-white/15 px-3 font-semibold text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-purple"
+              className="flex min-h-11 items-center gap-2 px-1 font-medium text-white hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
             >
-              <Menu className="h-4 w-4" aria-hidden /> Shop by category
+              <Menu className="hidden h-4 w-4 lg:block" aria-hidden />
+              Shop by category
+              <ChevronDown className="h-4 w-4 text-white/80" aria-hidden />
             </button>
             <div
               id="category-menu"
               hidden={openMenu !== "categories"}
               className={cn(
-                "absolute left-0 top-11 z-50 w-[min(40rem,90vw)] border border-border bg-popover p-3 shadow-pop",
+                "absolute left-0 top-11 z-50 w-[min(40rem,90vw)] rounded-lg border border-border bg-popover p-3 shadow-pop",
                 openMenu === "categories" ? "block" : "hidden",
               )}
             >
@@ -348,8 +360,8 @@ export function Header() {
                     key={c.slug}
                     to="/shop"
                     search={{ category: c.slug }}
-                      onClick={() => setOpenMenu(null)}
-                    className="group block overflow-hidden rounded-md border border-border bg-card transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => setOpenMenu(null)}
+                    className="group block overflow-hidden rounded-card bg-card transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <span className="block aspect-[5/3] overflow-hidden bg-secondary">
                       <img
@@ -367,7 +379,9 @@ export function Header() {
             </div>
           </div>
 
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Site">
+          <span className="mx-2 hidden h-5 w-px shrink-0 bg-white/30 lg:block" aria-hidden />
+
+          <nav className="hidden items-center lg:flex" aria-label="Site">
             {publicNav.map((item) => (
               <div
                 key={item.id}
@@ -386,8 +400,8 @@ export function Header() {
                   onKeyDown={(e) => {
                     if (e.key === "Escape") setOpenMenu(null);
                   }}
-                  className="inline-flex min-h-11 items-center rounded px-3 font-medium text-white/90 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-deep-purple"
-                  activeProps={{ className: "font-semibold text-white shadow-[inset_0_-2px_0_0_var(--tlb-gold)]" }}
+                  className="inline-flex min-h-11 items-center rounded px-3 font-medium text-white/90 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+                  activeProps={{ className: "font-semibold text-white" }}
                 >
                   {item.label}
                 </Link>
@@ -395,7 +409,7 @@ export function Header() {
                   id={`${item.id}-menu`}
                   hidden={openMenu !== item.id}
                   className={cn(
-                    "absolute top-11 z-50 w-64 border border-border bg-popover py-2 shadow-pop",
+                    "absolute top-11 z-50 w-64 rounded-lg border border-border bg-popover py-2 shadow-pop",
                     item.align === "right" ? "right-0" : "left-0",
                     openMenu === item.id ? "block" : "hidden",
                   )}
@@ -414,20 +428,11 @@ export function Header() {
         </div>
       </div>
 
-      <form onSubmit={submit} className="container-page flex items-center gap-2 pb-2 md:hidden">
-        <Input
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search products…"
-          aria-label="Search products"
-          className="h-11 min-h-11"
-        />
-        <Button type="submit" className="h-11 min-h-11 min-w-11 px-3">
-          <Search className="h-4 w-4" aria-hidden />
-          <span className="sr-only">Search</span>
-        </Button>
-      </form>
+      <div className="container-page pb-3 lg:hidden">
+        <form onSubmit={submit} className="flex h-12 items-center gap-1 rounded-full border border-border bg-neutral-50 px-1.5">
+          {searchFields}
+        </form>
+      </div>
     </header>
   );
 }

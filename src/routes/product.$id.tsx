@@ -201,7 +201,7 @@ function ProductDetail() {
           ) : null}
         </div>
 
-        <div className="mt-10 overflow-hidden rounded-lg border border-border bg-secondary lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0">
+        <div className="mt-10 overflow-hidden rounded-card bg-secondary lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0">
           <img
             src={product.image}
             alt={product.hasProductImage ? product.name : `Category illustration for ${product.name}`}

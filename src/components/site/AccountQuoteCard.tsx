@@ -107,7 +107,7 @@ export function AccountQuoteCard({
       ref={articleRef}
       id={`quote-${quote.reference}`}
       aria-current={highlighted ? "true" : undefined}
-      className={cn("rounded-lg p-4", highlighted ? "border-l-4 border-l-primary bg-muted/40" : "")}
+      className={cn("rounded-card p-4", highlighted ? "border-l-4 border-l-primary bg-muted/40" : "")}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -124,7 +124,7 @@ export function AccountQuoteCard({
       ) : null}
       {explanation ? <p className="mt-2 text-xs text-muted-foreground">{explanation}</p> : null}
       {quote.status === "accepted" ? (
-        <div className="mt-3 space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
+        <div className="mt-3 space-y-2 rounded-card bg-secondary/40 p-3">
           <p className="text-xs text-muted-foreground">
             This quotation has been accepted. Acceptance does not create an order or reserve stock. Contact
             TLB for the next business step.
@@ -140,7 +140,7 @@ export function AccountQuoteCard({
         </div>
       ) : null}
       {canAccept ? (
-        <div className="mt-3 space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
+        <div className="mt-3 space-y-2 rounded-card bg-secondary/40 p-3">
           <p className="text-xs text-muted-foreground">
             Accepting confirms that you agree to the quoted prices. It does not create an order or process
             payment.
