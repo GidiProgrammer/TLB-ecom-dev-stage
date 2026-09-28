@@ -78,7 +78,9 @@ export function Footer() {
       <div className="bg-deep-purple text-white">
         <div className="container-page grid gap-10 py-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] lg:gap-8">
           <div className="min-w-0">
-            <BrandLogo className="h-14" />
+            <span className="inline-flex rounded-lg bg-white px-3 py-2">
+              <BrandLogo className="h-14" />
+            </span>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/80">
               Supplier of laboratory chemicals, equipment, glassware and safety products to institutions, industry and
               healthcare across Ghana.
