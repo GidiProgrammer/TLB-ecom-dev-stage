@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { FileText, Heart, ShoppingCart } from "lucide-react";
+import { FileText, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { formatGHS, remainingPurchasableQty, stockLabel, stockStatus, unavailableReason, purchaseUnavailableLabel, purchaseUnavailableMessage } from "@/lib/catalog-utils";
 import type { CatalogProduct } from "@/lib/queries/products";
@@ -17,12 +16,10 @@ function cardSpec(description: string) {
 export function ProductCard({
   product,
   badge,
-  showSave,
   className,
 }: {
   product: CatalogProduct;
   badge?: string;
-  showSave?: boolean;
   className?: string;
 }) {
   const { addToCart, addToQuote, cart } = useStore();
@@ -31,7 +28,6 @@ export function ProductCard({
   const blocked = unavailableReason(product.stock_quantity, inCart);
   const canAdd = remaining > 0;
   const spec = cardSpec(product.description);
-  const [saved, setSaved] = useState(false);
   const status = stockStatus(product.stock_quantity, product.low_stock_threshold);
   const stockDot =
     status === "in-stock" ? "bg-success" : status === "low-stock" ? "bg-warning" : "bg-destructive";
@@ -47,7 +43,6 @@ export function ProductCard({
 
   return (
     <article className={cn("group flex flex-col overflow-hidden rounded-card bg-card transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md", className)}>
-      <div className="relative">
       <Link
         to="/product/$id"
         params={{ id: product.id }}
@@ -65,18 +60,6 @@ export function ProductCard({
           className="h-full w-full object-cover object-center motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-[1.03]"
         />
       </Link>
-      {showSave ? (
-        <button
-          type="button"
-          className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-600 shadow-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-pressed={saved}
-          aria-label={saved ? "Remove saved product" : "Save product"}
-          onClick={() => setSaved((current) => !current)}
-        >
-          <Heart className={cn("h-4 w-4", saved && "fill-primary text-primary")} aria-hidden />
-        </button>
-      ) : null}
-      </div>
 
       <div className="flex flex-1 flex-col p-4">
         {product.categoryName ? (

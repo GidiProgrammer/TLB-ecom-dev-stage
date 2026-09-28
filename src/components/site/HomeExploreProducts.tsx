@@ -196,7 +196,7 @@ export function HomeExploreProducts({
         ) : (
           <div ref={railRef} className="mt-5 flex gap-4 overflow-x-auto pb-1 snap-x snap-proximity scrollbar-none">
             {selection.map((product) => (
-              <ProductCard key={product.id} product={product} showSave className="w-64 shrink-0 snap-start sm:w-72" />
+              <ProductCard key={product.id} product={product} className="w-64 shrink-0 snap-start sm:w-72" />
             ))}
           </div>
         )}
