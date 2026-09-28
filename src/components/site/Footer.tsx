@@ -1,27 +1,20 @@
-import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   ChevronRight,
-  Facebook,
   FileText,
   Headphones,
-  Instagram,
-  Linkedin,
   Mail,
   MapPin,
   MessageSquare,
   Phone,
   ShoppingCart,
 } from "lucide-react";
-import { toast } from "sonner";
 import { COMPANY } from "@/lib/catalog-utils";
-import { submitContact } from "@/lib/contact";
 import { useCategories } from "@/lib/queries/products";
 import { BrandLogo } from "@/components/site/BrandLogo";
 
 const phoneHref = `tel:${COMPANY.phone.replace(/[^\d+]/g, "")}`;
-const whatsappHref = `https://wa.me/${COMPANY.phone.replace(/\D/g, "")}`;
 
 function columnTitle(label: string) {
   return (
@@ -34,36 +27,6 @@ function columnTitle(label: string) {
 
 export function Footer() {
   const { data: categories } = useCategories();
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const subscribe = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const address = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
-      toast.error("Enter a valid email address");
-      return;
-    }
-    setBusy(true);
-    try {
-      await submitContact({
-        data: {
-          name: "Newsletter subscriber",
-          email: address,
-          message: "Please add this address to product updates and offers.",
-          website: "",
-        },
-      });
-      setEmail("");
-      toast.success("Request received", {
-        description: "We'll use this address for product updates. This does not mean an email has been delivered yet.",
-      });
-    } catch {
-      toast.error("Could not subscribe just now. Please email us instead.");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <footer className="mt-8 max-w-full">
@@ -113,7 +76,7 @@ export function Footer() {
       </div>
 
       <div className="bg-deep-purple text-white">
-        <div className="container-page grid gap-10 py-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(16rem,1.15fr)] lg:gap-8">
+        <div className="container-page grid gap-10 py-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] lg:gap-8">
           <div className="min-w-0">
             <BrandLogo className="h-14" />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/80">
@@ -140,24 +103,6 @@ export function Footer() {
                 </span>
               </li>
             </ul>
-            <div className="mt-6 flex gap-2">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white" aria-hidden>
-                <Facebook className="h-4 w-4" />
-              </span>
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white" aria-hidden>
-                <Instagram className="h-4 w-4" />
-              </span>
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white" aria-hidden>
-                <Linkedin className="h-4 w-4" />
-              </span>
-              <a
-                href={whatsappHref}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                aria-label="WhatsApp TLB Enterprise"
-              >
-                <MessageSquare className="h-4 w-4" aria-hidden />
-              </a>
-            </div>
           </div>
 
           <div className="min-w-0">
@@ -231,59 +176,25 @@ export function Footer() {
           </div>
 
           <div className="min-w-0">
-            <div className="rounded-card bg-primary px-5 py-6">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-gold">Stay updated</p>
-              <h3 className="mt-2 text-xl font-bold leading-tight">Get the latest product updates and offers.</h3>
-              <p className="mt-2 text-sm leading-relaxed text-white/80">
-                Subscribe to our newsletter for new arrivals, promotions and industry updates.
-              </p>
-              <form onSubmit={subscribe} className="mt-4 flex items-center rounded-full bg-white p-1">
-                <label htmlFor="footer-email" className="sr-only">
-                  Email address
-                </label>
-                <Mail className="ml-3 h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
-                <input
-                  id="footer-email"
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="Enter your email address"
-                  className="h-11 min-w-0 flex-1 bg-transparent px-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
-                />
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gold text-gold-foreground hover:bg-gold-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                  aria-label="Subscribe"
-                >
-                  <ArrowRight className="h-4 w-4" aria-hidden />
-                </button>
-              </form>
-            </div>
-            <div className="mt-6">
-              <h3 className="text-sm font-semibold">Get in touch</h3>
-              <ul className="mt-3 space-y-3 text-sm text-white/80">
-                <li className="flex items-start gap-3">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                  {COMPANY.address}
-                </li>
-                <li>
-                  <a href={phoneHref} className="flex items-center gap-3 hover:text-white">
-                    <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                    {COMPANY.phone}
-                  </a>
-                </li>
-                <li>
-                  <a href={`mailto:${COMPANY.email}`} className="flex items-center gap-3 hover:text-white">
-                    <Mail className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="break-all">{COMPANY.email}</span>
-                  </a>
-                </li>
-              </ul>
-            </div>
+            <h3 className="text-sm font-semibold">Get in touch</h3>
+            <ul className="mt-3 space-y-3 text-sm text-white/80">
+              <li className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                {COMPANY.address}
+              </li>
+              <li>
+                <a href={phoneHref} className="flex items-center gap-3 hover:text-white">
+                  <Phone className="h-4 w-4 shrink-0" aria-hidden />
+                  {COMPANY.phone}
+                </a>
+              </li>
+              <li>
+                <a href={`mailto:${COMPANY.email}`} className="flex items-center gap-3 hover:text-white">
+                  <Mail className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="break-all">{COMPANY.email}</span>
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
 
