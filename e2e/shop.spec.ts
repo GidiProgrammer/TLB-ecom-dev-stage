@@ -76,7 +76,8 @@ test.describe("shop catalogue", () => {
     ]) {
       await page.setViewportSize(viewport);
       await page.goto("/product/ac-002");
-      const add = page.getByRole("button", { name: "Add to cart" });
+      const purchase = page.getByRole("heading", { level: 1 }).locator("..");
+      const add = purchase.getByRole("button", { name: "Add to cart" });
       await expect(add).toBeVisible({ timeout: 15_000 });
       const box = await add.boundingBox();
       expect(box).toBeTruthy();
@@ -102,10 +103,11 @@ test.describe("shop catalogue", () => {
     await page.goto("/product/le-005");
     const heading = page.getByRole("heading", { level: 1 });
     await expect(heading).toBeVisible({ timeout: 15_000 });
-    const oos = page.getByRole("button", { name: "Out of stock" });
+    const purchase = heading.locator("..");
+    const oos = purchase.getByRole("button", { name: "Out of stock" });
     if (await oos.count()) {
       await expect(oos).toBeDisabled();
-      await expect(page.getByRole("button", { name: "Add to cart" })).toHaveCount(0);
+      await expect(purchase.getByRole("button", { name: "Add to cart" })).toHaveCount(0);
       return;
     }
     test.info().annotations.push({

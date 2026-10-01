@@ -3,9 +3,12 @@ import { expect, test } from "@playwright/test";
 test("homepage loads", async ({ page }) => {
   const response = await page.goto("/");
   expect(response?.ok()).toBeTruthy();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Laboratory supplies for serious work.",
-  );
+  const hero = page.locator("[data-autoplay]");
+  await expect(hero).toBeVisible();
+  await expect(hero.locator("#home-hero-heading")).toBeVisible();
+  const slides = hero.getByRole("tablist", { name: "Hero slides" });
+  await expect(slides.getByRole("tab")).toHaveCount(3);
+  await expect(slides.getByRole("tab", { selected: true })).toHaveCount(1);
   await expect(page.getByRole("heading", { name: "New in catalogue" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Best sellers" })).toHaveCount(0);
 });
@@ -40,9 +43,16 @@ test("hero autoplay does not advance under reduced motion", async ({ page }) => 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.clock.install();
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Laboratory supplies for serious work.");
+  const hero = page.locator("[data-autoplay]");
+  const heading = hero.locator("#home-hero-heading");
+  const selected = hero.getByRole("tab", { selected: true });
+  await expect(heading).toBeVisible();
+  await expect(selected).toHaveAttribute("aria-label", "Show slide 1");
+  const headline = (await heading.innerText()).trim();
+  expect(headline.length).toBeGreaterThan(0);
   await page.clock.fastForward(8_000);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Laboratory supplies for serious work.");
+  await expect(selected).toHaveAttribute("aria-label", "Show slide 1");
+  expect((await heading.innerText()).trim()).toBe(headline);
 });
 
 test("hero autoplay pauses while a slide control is focused", async ({ page }) => {

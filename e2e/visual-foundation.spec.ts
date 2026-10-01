@@ -12,6 +12,12 @@ test.describe("CP36 visual foundation", () => {
 
     const header = page.locator("header");
     await expect(header.getByRole("link", { name: /^Cart/ })).toBeVisible();
-    await expect(header.getByRole("link", { name: /^Quote/ })).toBeVisible();
+    const quote = header
+      .getByRole("navigation", { name: "Account and commerce" })
+      .getByRole("link", { name: "Request a quote" });
+    await expect(quote).toBeVisible();
+    await expect(quote).toHaveAttribute("href", "/quote");
+    await quote.click();
+    await expect(page).toHaveURL(/\/quote$/);
   });
 });
