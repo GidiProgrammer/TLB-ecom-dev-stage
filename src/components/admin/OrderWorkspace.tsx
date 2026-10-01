@@ -4,13 +4,10 @@ import { toast } from "sonner";
 import { formatGHS, productImage } from "@/lib/catalog-utils";
 import { listAdminProducts } from "@/lib/catalog-ops";
 import { Constants } from "@/integrations/supabase/types";
-import {
-  allowedOrderTransitions,
-  isOrderCancellable,
-  isTerminalOrderStatus,
-} from "@/lib/commerce-status";
+import { isOrderCancellable, isTerminalOrderStatus } from "@/lib/commerce-status";
 import { cancelOrder, updateOrderStatus } from "@/lib/admin-ops";
 import type { AdminOrder } from "@/lib/queries/admin";
+import { OrderDetailSheet, OrderStatusControl } from "@/components/admin/OrderDetailSheet";
 import {
   AdminCardToolbar,
   AdminEmpty,
@@ -23,13 +20,6 @@ import {
 } from "@/components/admin/AdminPageHeader";
 import { StatusBadge, orderStatusTone } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   TableBody,
   TableCell,
@@ -45,7 +35,10 @@ function mutationMessage(error: unknown, fallback: string) {
 }
 
 export function OrderWorkspace({ orders, compact }: { orders: AdminOrder[]; compact?: boolean }) {
+  const queryClient = useQueryClient();
   const [q, setQ] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const catalogue = useQuery({ queryKey: ["admin-catalogue"], queryFn: () => listAdminProducts() });
   const productById = useMemo(
     () => new Map((catalogue.data ?? []).map((product) => [product.id, product])),
@@ -55,16 +48,107 @@ export function OrderWorkspace({ orders, compact }: { orders: AdminOrder[]; comp
     const term = q.trim().toLowerCase();
     return term
       ? orders.filter(
-          (o) =>
-            o.reference.toLowerCase().includes(term) ||
-            (o.shipping_name ?? "").toLowerCase().includes(term) ||
-            o.status.toLowerCase().includes(term),
+          (order) =>
+            order.reference.toLowerCase().includes(term) ||
+            (order.shipping_name ?? "").toLowerCase().includes(term) ||
+            order.status.toLowerCase().includes(term),
         )
       : orders;
   }, [orders, q]);
   const paging = useAdminPage(filtered, q);
   const rows = compact ? filtered.slice(0, 8) : paging.slice;
+  const openOrder = orders.find((order) => order.id === openId) ?? null;
 
+  const saveStatus = async (order: AdminOrder, status: (typeof ORDER_STATUSES)[number]) => {
+    if (status === order.status) return;
+    setBusyId(order.id);
+    try {
+      await updateOrderStatus({ data: { orderId: order.id, status } });
+      await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      toast.success(`Order ${order.reference} updated`);
+    } catch (error) {
+      toast.error(mutationMessage(error, "Could not update order status"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const cancel = async (order: AdminOrder) => {
+    setBusyId(order.id);
+    try {
+      await cancelOrder({ data: { orderId: order.id } });
+      await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      toast.success(`Order ${order.reference} cancelled`);
+    } catch (error) {
+      toast.error(mutationMessage(error, "Could not cancel order"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <>
+      <OrderList
+        orders={orders}
+        compact={Boolean(compact)}
+        q={q}
+        setQ={setQ}
+        filtered={filtered}
+        rows={rows}
+        paging={paging}
+        openId={openId}
+        busyId={busyId}
+        productById={productById}
+        onOpen={setOpenId}
+        onStatus={(order, status) => void saveStatus(order, status)}
+        onCancel={(order) => void cancel(order)}
+      />
+      <OrderDetailSheet
+        order={openOrder}
+        busy={openOrder != null && busyId === openOrder.id}
+        onOpenChange={(open) => {
+          if (!open) setOpenId(null);
+        }}
+        onStatus={(status) => {
+          if (openOrder) void saveStatus(openOrder, status);
+        }}
+        onCancel={() => {
+          if (openOrder) void cancel(openOrder);
+        }}
+      />
+    </>
+  );
+}
+
+function OrderList({
+  orders,
+  compact,
+  q,
+  setQ,
+  filtered,
+  rows,
+  paging,
+  openId,
+  busyId,
+  productById,
+  onOpen,
+  onStatus,
+  onCancel,
+}: {
+  orders: AdminOrder[];
+  compact?: boolean;
+  q: string;
+  setQ: (value: string) => void;
+  filtered: AdminOrder[];
+  rows: AdminOrder[];
+  paging: ReturnType<typeof useAdminPage<AdminOrder>>;
+  openId: string | null;
+  busyId: string | null;
+  productById: Map<string, { image_url: string | null; category_slug: string | null }>;
+  onOpen: (id: string) => void;
+  onStatus: (order: AdminOrder, status: (typeof ORDER_STATUSES)[number]) => void;
+  onCancel: (order: AdminOrder) => void;
+}) {
   if (orders.length === 0) {
     return (
       <AdminPanel fill>
@@ -101,7 +185,12 @@ export function OrderWorkspace({ orders, compact }: { orders: AdminOrder[]; comp
                 key={order.id}
                 order={order}
                 compact={Boolean(compact)}
+                selected={openId === order.id}
+                busy={busyId === order.id}
                 imageSrc={orderThumb(order, productById)}
+                onOpen={() => onOpen(order.id)}
+                onStatus={(status) => onStatus(order, status)}
+                onCancel={() => onCancel(order)}
               />
             ))}
           </TableBody>
@@ -135,55 +224,42 @@ function orderThumb(
 function OrderRow({
   order,
   compact = false,
+  selected,
+  busy,
   imageSrc,
+  onOpen,
+  onStatus,
+  onCancel,
 }: {
   order: AdminOrder;
   compact?: boolean;
+  selected: boolean;
+  busy: boolean;
   imageSrc: string;
+  onOpen: () => void;
+  onStatus: (status: (typeof ORDER_STATUSES)[number]) => void;
+  onCancel: () => void;
 }) {
-  const queryClient = useQueryClient();
-  const [busy, setBusy] = useState(false);
-  const nextStatuses = allowedOrderTransitions(order.status);
   const terminal = isTerminalOrderStatus(order.status);
   const cancellable = isOrderCancellable(order.status);
 
-  const saveStatus = async (status: (typeof ORDER_STATUSES)[number]) => {
-    if (status === order.status) return;
-    setBusy(true);
-    try {
-      await updateOrderStatus({ data: { orderId: order.id, status } });
-      await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-      toast.success(`Order ${order.reference} updated`);
-    } catch (error) {
-      toast.error(mutationMessage(error, "Could not update order status"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const cancel = async () => {
-    setBusy(true);
-    try {
-      await cancelOrder({ data: { orderId: order.id } });
-      await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-      toast.success(`Order ${order.reference} cancelled`);
-    } catch (error) {
-      toast.error(mutationMessage(error, "Could not cancel order"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
-    <TableRow>
+    <TableRow data-state={selected ? "selected" : undefined}>
       <TableCell>
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-admin-table">
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
           </span>
-          <AdminIdentity hint={order.order_items[0]?.product_name}>
-            {order.reference}
-          </AdminIdentity>
+          <button
+            type="button"
+            className="min-w-0 rounded-[8px] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#523784]"
+            aria-haspopup="dialog"
+            aria-expanded={selected}
+            aria-label={`Open order ${order.reference}`}
+            onClick={onOpen}
+          >
+            <AdminIdentity hint={order.order_items[0]?.product_name}>{order.reference}</AdminIdentity>
+          </button>
         </div>
       </TableCell>
       <TableCell className="hidden whitespace-nowrap text-muted-foreground md:table-cell">
@@ -196,31 +272,20 @@ function OrderRow({
         {terminal || compact ? (
           <StatusBadge tone={orderStatusTone(order.status)}>{order.status}</StatusBadge>
         ) : (
-          <Select
-            value={order.status}
-            onValueChange={(value) => void saveStatus(value as (typeof ORDER_STATUSES)[number])}
-            disabled={busy || nextStatuses.length === 0}
-          >
-            <SelectTrigger className="h-11 min-h-11 w-40 text-xs" aria-label={`Status for ${order.reference}`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={order.status} className="capitalize">
-                {order.status.replaceAll("_", " ")}
-              </SelectItem>
-              {nextStatuses.map((status) => (
-                <SelectItem key={status} value={status} className="capitalize">
-                  {status.replaceAll("_", " ")}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <OrderStatusControl
+            reference={order.reference}
+            status={order.status}
+            busy={busy}
+            onStatus={onStatus}
+            className="h-11 min-h-11 w-40 rounded-[8px] text-xs"
+            ariaLabel={`Status for ${order.reference}`}
+          />
         )}
       </TableCell>
       {compact ? null : (
         <TableCell className="text-center">
           {cancellable ? (
-            <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => void cancel()}>
+            <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onCancel}>
               Cancel order
             </Button>
           ) : (

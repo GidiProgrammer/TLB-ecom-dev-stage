@@ -47,6 +47,16 @@ test.describe("authenticated account", () => {
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/account/);
     await expect(page.getByRole("heading", { name: "Admin overview" })).toHaveCount(0);
+
+    await page.goto("/admin/orders");
+    await expect(page).toHaveURL(/\/account/);
+    await expect(page.getByRole("dialog", { name: /TLB-/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Open order / })).toHaveCount(0);
+
+    await page.goto("/admin/quotes");
+    await expect(page).toHaveURL(/\/account/);
+    await expect(page.getByRole("dialog", { name: /QT-/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Open quote / })).toHaveCount(0);
   });
 
   test("customer can accept a quoted quotation without creating an order", async ({ page }) => {

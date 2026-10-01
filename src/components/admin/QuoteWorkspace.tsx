@@ -4,9 +4,9 @@ import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 import { formatGHS } from "@/lib/catalog-utils";
 import { Constants } from "@/integrations/supabase/types";
-import { allowedQuoteTransitions, isTerminalQuoteStatus } from "@/lib/commerce-status";
 import { updateQuoteItemPrice, updateQuoteStatus } from "@/lib/admin-ops";
 import type { AdminQuote } from "@/lib/queries/admin";
+import { QuoteDetailSheet, QuoteLinePriceEditor, QuoteStatusControl } from "@/components/admin/QuoteDetailSheet";
 import {
   AdminCardToolbar,
   AdminEmpty,
@@ -18,16 +18,7 @@ import {
   AdminTable,
   useAdminPage,
 } from "@/components/admin/AdminPageHeader";
-import { StatusBadge, quoteStatusTone } from "@/components/admin/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 import {
   TableBody,
   TableCell,
@@ -43,8 +34,11 @@ function mutationMessage(error: unknown, fallback: string) {
 }
 
 export function QuoteWorkspace({ quotes }: { quotes: AdminQuote[] }) {
+  const queryClient = useQueryClient();
   const [q, setQ] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return quotes;
@@ -56,6 +50,34 @@ export function QuoteWorkspace({ quotes }: { quotes: AdminQuote[] }) {
     );
   }, [quotes, q]);
   const paging = useAdminPage(filtered, q);
+  const openQuote = quotes.find((quote) => quote.id === openId) ?? null;
+
+  const saveStatus = async (quote: AdminQuote, status: (typeof QUOTE_STATUSES)[number]) => {
+    if (status === quote.status) return;
+    setBusyId(quote.id);
+    try {
+      await updateQuoteStatus({ data: { quoteId: quote.id, status } });
+      await queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
+      toast.success(`Quote ${quote.reference} updated`);
+    } catch (error) {
+      toast.error(mutationMessage(error, "Could not update quote status"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const savePrice = async (quote: AdminQuote, quoteItemId: string, quotedPrice: number) => {
+    setBusyId(quote.id);
+    try {
+      await updateQuoteItemPrice({ data: { quoteItemId, quotedPrice } });
+      await queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
+      toast.success(`Price saved for ${quote.reference}`);
+    } catch (error) {
+      toast.error(mutationMessage(error, "Could not update quoted price"));
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   if (quotes.length === 0) {
     return (
@@ -66,89 +88,109 @@ export function QuoteWorkspace({ quotes }: { quotes: AdminQuote[] }) {
   }
 
   return (
-    <AdminPanel fill>
-      <AdminCardToolbar className="items-start">
-        <div className="w-full space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Accepted means the customer agreed to the quoted prices. It is not an order, payment, or
-            warehouse instruction.
-          </p>
-          <AdminSearch value={q} onChange={setQ} label="Search quotes" />
-        </div>
-      </AdminCardToolbar>
-      {filtered.length === 0 ? (
-        <AdminEmpty>No quotes match that search.</AdminEmpty>
-      ) : (
-        <AdminTable>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Reference</TableHead>
-            <TableHead className="hidden md:table-cell">Created</TableHead>
-            <TableHead className="hidden sm:table-cell">Contact</TableHead>
-            <TableHead className="text-right">Items</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-center">Lines</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {paging.slice.map((quote) => (
-            <QuoteRow
-              key={quote.id}
-              quote={quote}
-              expanded={openId === quote.id}
-              onToggle={() => setOpenId((id) => (id === quote.id ? null : quote.id))}
-            />
-          ))}
-        </TableBody>
-        </AdminTable>
-      )}
-      {filtered.length === 0 ? null : (
-        <AdminPagination
-          page={paging.page}
-          pageCount={paging.pageCount}
-          start={paging.start}
-          end={paging.end}
-          total={paging.total}
-          onPage={paging.setPage}
-        />
-      )}
-    </AdminPanel>
+    <>
+      <AdminPanel fill>
+        <AdminCardToolbar className="items-start">
+          <div className="w-full space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Accepted means the customer agreed to the quoted prices. It is not an order, payment, or
+              warehouse instruction.
+            </p>
+            <AdminSearch value={q} onChange={setQ} label="Search quotes" />
+          </div>
+        </AdminCardToolbar>
+        {filtered.length === 0 ? (
+          <AdminEmpty>No quotes match that search.</AdminEmpty>
+        ) : (
+          <AdminTable>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Reference</TableHead>
+                <TableHead className="hidden md:table-cell">Created</TableHead>
+                <TableHead className="hidden sm:table-cell">Contact</TableHead>
+                <TableHead className="text-right">Items</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-center">Lines</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paging.slice.map((quote) => (
+                <QuoteRow
+                  key={quote.id}
+                  quote={quote}
+                  expanded={expandedId === quote.id}
+                  selected={openId === quote.id}
+                  busy={busyId === quote.id}
+                  onToggle={() => setExpandedId((id) => (id === quote.id ? null : quote.id))}
+                  onOpen={() => setOpenId(quote.id)}
+                  onStatus={(status) => void saveStatus(quote, status)}
+                  onSavePrice={(quoteItemId, quotedPrice) => void savePrice(quote, quoteItemId, quotedPrice)}
+                />
+              ))}
+            </TableBody>
+          </AdminTable>
+        )}
+        {filtered.length === 0 ? null : (
+          <AdminPagination
+            page={paging.page}
+            pageCount={paging.pageCount}
+            start={paging.start}
+            end={paging.end}
+            total={paging.total}
+            onPage={paging.setPage}
+          />
+        )}
+      </AdminPanel>
+      <QuoteDetailSheet
+        quote={openQuote}
+        busy={openQuote != null && busyId === openQuote.id}
+        onOpenChange={(open) => {
+          if (!open) setOpenId(null);
+        }}
+        onStatus={(status) => {
+          if (openQuote) void saveStatus(openQuote, status);
+        }}
+        onSavePrice={(quoteItemId, quotedPrice) => {
+          if (openQuote) void savePrice(openQuote, quoteItemId, quotedPrice);
+        }}
+      />
+    </>
   );
 }
 
 function QuoteRow({
   quote,
   expanded,
+  selected,
+  busy,
   onToggle,
+  onOpen,
+  onStatus,
+  onSavePrice,
 }: {
   quote: AdminQuote;
   expanded: boolean;
+  selected: boolean;
+  busy: boolean;
   onToggle: () => void;
+  onOpen: () => void;
+  onStatus: (status: (typeof QUOTE_STATUSES)[number]) => void;
+  onSavePrice: (quoteItemId: string, quotedPrice: number) => void;
 }) {
-  const queryClient = useQueryClient();
-  const [busy, setBusy] = useState(false);
-  const nextStatuses = allowedQuoteTransitions(quote.status);
-  const terminal = isTerminalQuoteStatus(quote.status);
-
-  const saveStatus = async (status: (typeof QUOTE_STATUSES)[number]) => {
-    if (status === quote.status) return;
-    setBusy(true);
-    try {
-      await updateQuoteStatus({ data: { quoteId: quote.id, status } });
-      await queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
-      toast.success(`Quote ${quote.reference} updated`);
-    } catch (error) {
-      toast.error(mutationMessage(error, "Could not update quote status"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <>
-      <TableRow>
+      <TableRow data-state={selected ? "selected" : undefined}>
         <TableCell>
-          <AdminIdentity hint={quote.contact_name ?? undefined}>{quote.reference}</AdminIdentity>
+          <button
+            type="button"
+            className="min-w-0 rounded-[8px] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#523784]"
+            aria-haspopup="dialog"
+            aria-expanded={selected}
+            aria-label={`Open quote ${quote.reference}`}
+            onClick={onOpen}
+          >
+            <AdminIdentity hint={quote.contact_name ?? undefined}>{quote.reference}</AdminIdentity>
+          </button>
         </TableCell>
         <TableCell className="hidden whitespace-nowrap text-muted-foreground md:table-cell">
           {new Date(quote.created_at).toLocaleString("en-GB")}
@@ -156,29 +198,14 @@ function QuoteRow({
         <TableCell className="hidden sm:table-cell">{quote.contact_name ?? "—"}</TableCell>
         <TableCell className="text-right tabular-nums">{quote.quote_items.length}</TableCell>
         <TableCell>
-          {terminal ? (
-            <StatusBadge tone={quoteStatusTone(quote.status)}>{quote.status}</StatusBadge>
-          ) : (
-            <Select
-              value={quote.status}
-              onValueChange={(value) => void saveStatus(value as (typeof QUOTE_STATUSES)[number])}
-              disabled={busy || nextStatuses.length === 0}
-            >
-              <SelectTrigger className="h-11 min-h-11 w-36 text-xs" aria-label={`Status for ${quote.reference}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={quote.status} className="capitalize">
-                  {quote.status}
-                </SelectItem>
-                {nextStatuses.map((status) => (
-                  <SelectItem key={status} value={status} className="capitalize">
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <QuoteStatusControl
+            reference={quote.reference}
+            status={quote.status}
+            busy={busy}
+            onStatus={onStatus}
+            triggerClassName="h-11 min-h-11 w-36 rounded-[8px] text-xs"
+            ariaLabel={`Status for ${quote.reference}`}
+          />
         </TableCell>
         <TableCell className="text-center">
           <AdminIconButton
@@ -195,72 +222,29 @@ function QuoteRow({
           <TableCell colSpan={6} className="bg-admin-table">
             <ul className="space-y-2 px-1 py-2">
               {quote.quote_items.map((item) => (
-                <QuoteItemPriceRow
-                  key={item.id}
-                  item={item}
-                  quoteReference={quote.reference}
-                  quoteStatus={quote.status}
-                />
+                <li key={item.id} className="rounded-lg bg-card px-3 py-2">
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+                    <span className="min-w-0 flex-1 text-sm font-medium break-words">{item.product_name}</span>
+                    <span className="text-sm text-muted-foreground">× {item.quantity}</span>
+                    {item.quoted_price != null ? (
+                      <span className="text-sm tabular-nums">{formatGHS(Number(item.quoted_price))}</span>
+                    ) : (
+                      <StatusBadge tone="warning">Pending</StatusBadge>
+                    )}
+                    <QuoteLinePriceEditor
+                      key={`${item.id}:${item.quoted_price ?? "unset"}`}
+                      item={item}
+                      quoteStatus={quote.status}
+                      busy={busy}
+                      onSave={(quotedPrice) => onSavePrice(item.id, quotedPrice)}
+                    />
+                  </div>
+                </li>
               ))}
             </ul>
           </TableCell>
         </TableRow>
       ) : null}
     </>
-  );
-}
-
-function QuoteItemPriceRow({
-  item,
-  quoteReference,
-  quoteStatus,
-}: {
-  item: AdminQuote["quote_items"][number];
-  quoteReference: string;
-  quoteStatus: AdminQuote["status"];
-}) {
-  const queryClient = useQueryClient();
-  const [value, setValue] = useState(item.quoted_price == null ? "" : String(item.quoted_price));
-  const [busy, setBusy] = useState(false);
-  const closed = isTerminalQuoteStatus(quoteStatus);
-
-  const save = async () => {
-    const parsed = Number(value);
-    setBusy(true);
-    try {
-      await updateQuoteItemPrice({ data: { quoteItemId: item.id, quotedPrice: parsed } });
-      await queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
-      toast.success(`Price saved for ${quoteReference}`);
-    } catch (error) {
-      toast.error(mutationMessage(error, "Could not update quoted price"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <li className="flex flex-wrap items-center gap-2 rounded-lg bg-card px-3 py-2 text-sm">
-      <span className="min-w-0 flex-1 font-medium">{item.product_name}</span>
-      <span className="text-muted-foreground">× {item.quantity}</span>
-      {item.quoted_price != null ? (
-        <span className="tabular-nums">{formatGHS(Number(item.quoted_price))}</span>
-      ) : (
-        <StatusBadge tone="warning">Pending</StatusBadge>
-      )}
-      <Input
-        type="number"
-        min={0}
-        step="0.01"
-        inputMode="decimal"
-        aria-label={`Quoted price for ${item.product_name}`}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        disabled={closed || busy}
-        className="h-11 min-h-11 w-28 text-right tabular-nums"
-      />
-      <Button size="sm" variant="ghost" disabled={closed || busy} onClick={() => void save()}>
-        Save price
-      </Button>
-    </li>
   );
 }
